@@ -51,6 +51,9 @@ uvicorn api:app --reload
 
 Tarayıcınızda `http://localhost:8000` adresine giderek chatbot'u web üzerinden kullanabilirsiniz.
 
+
+![Image](https://github.com/user-attachments/assets/48b2e721-9702-42d0-bd62-da7b73391115)
+
 ### 3. Streamlit Uygulamasını Başlatma
 
 ```bash
@@ -59,6 +62,8 @@ streamlit run bot.py
 ```
 
 Tarayıcınızda açılan Streamlit arayüzü ile doğrudan etkileşim kurabilirsiniz.
+
+![Image](https://github.com/user-attachments/assets/51125792-4a32-4515-8304-62cc8c8bcdbd)
 
 ## 🛠️ Teknolojiler
 
