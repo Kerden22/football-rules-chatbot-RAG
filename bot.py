@@ -1,3 +1,5 @@
+# çalıştırmak için : streamlit run bot.py 
+
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -17,7 +19,7 @@ st.title("⚽ Futbol Kuralları Chatbot'u")
 
 # 📌 **PDF'yi ve vektör veritabanını sadece bir kez yükle**
 if "vectorstore" not in st.session_state:
-    with st.spinner("📖 PDF yükleniyor ve işleniyor... (Sadece ilk seferde)"):
+    with st.spinner("📖 PDF yükleniyor ve işleniyor..."):
         loader = PyPDFLoader("FutbolKuralları.pdf")
         data = loader.load()
         
