@@ -1,0 +1,6 @@
+# Jupyter Notebook checkpoint klasörlerini yok say
+.ipynb_checkpoints/
+
+# ChromaDB klasörünü yok say
+chroma_db/
+
