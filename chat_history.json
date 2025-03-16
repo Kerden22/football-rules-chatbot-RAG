@@ -1,0 +1,86 @@
+{
+  "sessions": [
+    {
+      "id": "ba14ccd3-3856-41e2-ab01-5afacdca2c50",
+      "title": "merhaba kırmızı kart nedr?",
+      "messages": [
+        {
+          "role": "user",
+          "content": "merhaba kırmızı kart nedr?"
+        },
+        {
+          "role": "assistant",
+          "content": "Bu konuda yardımcı olamıyorum. Metinde kırmızı kart ile ilgili bilgi yer almamaktadır."
+        },
+        {
+          "role": "user",
+          "content": "peki sarı kart nedir"
+        },
+        {
+          "role": "assistant",
+          "content": "Sarı kart, futbol oyununda bir oyuncuya verilen bir uyarıdır.  Oyuncuya sportmenlik dışı davranışlar, kural ihlalleri veya oyunun akışını bozan hareketler nedeniyle verilir. İki sarı kart, kırmızı karta ve oyun dışı kalmaya yol açar."
+        },
+        {
+          "role": "user",
+          "content": "kırmızı kart nedir"
+        },
+        {
+          "role": "assistant",
+          "content": "Kırmızı kart, bir oyuncunun oyundan atılması anlamına gelir.  Verilen metinde kırmızı kartın tanımıyla ilgili bilgi yer almamaktadır."
+        }
+      ]
+    },
+    {
+      "id": "8ef6d104-05e9-4e18-8b14-0e6a2a72f676",
+      "title": "sarı kart nedir",
+      "messages": [
+        {
+          "role": "user",
+          "content": "sarı kart nedir"
+        },
+        {
+          "role": "assistant",
+          "content": "Sarı kart, bir oyuncuya yapılan bir uyarıdır. Hakem, bir ihlali cezalandırması ve ihlali yapan takımdan yanlış oyuncuya bir sarı veya kırmızı kart verilmesi halinde, ihlalde bulunan kişinin kim olduğu incelenebilir.  Bu inceleme, bir gol, penaltı olayı veya doğrudan kırmızı kart ile ilgili olmadıkça, fiili ihlalin kendisini kapsamaz."
+        },
+        {
+          "role": "user",
+          "content": "teşekkürler"
+        },
+        {
+          "role": "assistant",
+          "content": "Rica ederim. Başka sorunuz varsa lütfen sorun."
+        },
+        {
+          "role": "user",
+          "content": "sarı kart nedir"
+        },
+        {
+          "role": "assistant",
+          "content": "Sarı kart, bir futbolcunun yaptığı kural dışı bir hareket sonucu hakem tarafından verilen bir uyarıdır. İki sarı kart, oyuncunun oyundan atılmasıyla sonuçlanan kırmızı karta dönüşür.  Metinde sarı kartın hangi durumlarda verildiği ile ilgili spesifik bilgi yer almıyor."
+        }
+      ]
+    },
+    {
+      "id": "cf6bfed4-891a-40d7-9b9e-07db9659b916",
+      "title": "merhaba",
+      "messages": [
+        {
+          "role": "user",
+          "content": "merhaba"
+        },
+        {
+          "role": "assistant",
+          "content": "Merhaba! Futbol kuralları hakkında sorularınız varsa yanıtlamaya hazırım."
+        },
+        {
+          "role": "user",
+          "content": "Ofsayt nedir"
+        },
+        {
+          "role": "assistant",
+          "content": "Ofsayt, bir oyuncunun top kendisine pas atıldığında rakip kale çizgisine rakip takımdan sondan ikinci oyuncudan daha yakın olması durumudur. Ancak, top kendisine pas atıldığında kendi yarı sahasında ise veya topu doğrudan taç atışından, köşe vuruşundan veya kale vuruşundan alıyorsa ofsayt sayılmaz.  \"Bilerek oynama\" ve \"sekme\" arasında ayrım yapma ilkeleri, ofsayt pozisyonundaki bir oyuncunun, rakibinin topa bilerek dokunması durumunda ofsayt olmaması gerektiği beklentisine dayanır."
+        }
+      ]
+    }
+  ]
+}

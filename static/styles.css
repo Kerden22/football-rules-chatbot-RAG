@@ -10,9 +10,46 @@ body {
   margin: 0;
 }
 
-/* 💬 Chat Konteyner */
+/* 📌 Wrapper (Sola Geçmiş, Ortada Chat) */
+.wrapper {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  height: 90vh;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 📌 Chat Geçmişi Paneli (En Sola Yapışık) */
+.history-container {
+  width: 250px;
+  background: #1e1e1e;
+  padding: 15px;
+  border-right: 2px solid #333;
+  overflow-y: auto;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 90vh;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+/* 📌 Chat Kutusu (Tam Ortada) */
+.chat-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+  margin-left: 250px; /* 📌 Chat geçmişinin genişliği kadar kaydırıldı */
+  width: calc(100% - 250px);
+}
+
 .chat-container {
-  width: 500px !important; /* 🔥 Daha küçük hale getirildi */
+  width: 500px !important;
   max-width: 90%;
   min-width: 400px;
   background: #1e1e1e;
@@ -36,7 +73,7 @@ body {
 
 /* 📝 Chatbox İçerik Alanı */
 .chat-box {
-  height: 500px !important; /* 🔥 Daha küçük mesaj alanı */
+  height: 500px !important;
   overflow-y: auto;
   padding: 15px;
   display: flex;
@@ -151,10 +188,26 @@ button:hover {
   border-radius: 10px;
 }
 
-/* 📱 Mobil Uyum */
+/* 📱 Mobil Uyumluluk */
 @media (max-width: 768px) {
-  .chat-container {
-    width: 95%;
+  .wrapper {
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+  }
+
+  .history-container {
+    width: 100%;
+    border-right: none;
+    border-bottom: 2px solid #333;
+    height: auto;
+    position: relative;
+    left: auto;
+  }
+
+  .chat-wrapper {
+    width: 100%;
+    margin-left: 0;
   }
 
   .chat-box {
@@ -169,4 +222,50 @@ button:hover {
     font-size: 13px;
     padding: 10px;
   }
+}
+/* Geliştirilmiş Chat Geçmişi Tasarımı */
+
+/* 🔥 1) Chat Geçmişi Paneli (history-container) Arka Plan */
+.history-container {
+  background: linear-gradient(
+    135deg,
+    #242424,
+    #1e1e1e
+  ) !important; /* Degrade */
+}
+
+/* 🔥 2) Chat Geçmişi Başlık Stili */
+.history-container h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: #ccc;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+  font-weight: 600;
+}
+
+/* 🔥 3) Oturum Liste Elemanları (session-item) */
+.session-item {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #2a2a2a;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out, transform 0.2s ease-in-out;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Hover ve Tıklama Etkileri */
+.session-item:hover {
+  background: #3a3a3a;
+  transform: scale(1.03);
+}
+
+/* Seçili Oturum (İsterseniz JavaScript ile .active ekleyip kaldırabilirsiniz) */
+.session-item.active {
+  background: linear-gradient(135deg, #007bff, #00d4ff);
+  color: #121212;
+  font-weight: 600;
 }

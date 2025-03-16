@@ -7,20 +7,33 @@
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <div class="chat-container">
-      <div class="chat-header">⚽ Futbol Chatbot</div>
-      <div class="chat-box" id="chat-box"></div>
-      <div class="input-container">
-        <input
-          type="text"
-          id="user-input"
-          placeholder="Bir soru sor..."
-          onkeypress="handleKeyPress(event)"
-        />
-        <button onclick="sendMessage()">Gönder</button>
-        <button id="voice-btn">🎤</button>
+    <div class="wrapper">
+      <!-- Sol Panel: Chat Geçmişi ve Yeni Chat Butonu -->
+      <div class="history-container">
+        <button id="new-chat-btn">Yeni Chat</button>
+        <h3>📜 Chat Geçmişi</h3>
+        <div id="chat-history"></div>
+      </div>
+
+      <!-- Sağ Panel: Chat Alanı -->
+      <div class="chat-wrapper">
+        <div class="chat-container">
+          <div class="chat-header">⚽ Futbol Chatbot</div>
+          <div class="chat-box" id="chat-box"></div>
+          <div class="input-container">
+            <input
+              type="text"
+              id="user-input"
+              placeholder="Bir soru sor..."
+              onkeypress="handleKeyPress(event)"
+            />
+            <button onclick="sendMessage()">Gönder</button>
+            <button id="voice-btn">🎤</button>
+          </div>
+        </div>
       </div>
     </div>
+
     <script src="/static/script.js"></script>
   </body>
 </html>
