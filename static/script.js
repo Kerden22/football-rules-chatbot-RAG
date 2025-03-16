@@ -1,44 +1,123 @@
-// 🚀 Enter tuşu ile mesaj gönderme
+// Enter tuşu ile mesaj gönderme
 function handleKeyPress(event) {
-  if (event.key === "Enter") {
-    sendMessage();
-  }
+  if (event.key === "Enter") sendMessage();
 }
 
-// 📩 Mesaj gönderme fonksiyonu
+// Mesaj gönderme fonksiyonu
 async function sendMessage() {
   let userInput = document.getElementById("user-input").value;
   if (!userInput.trim()) return;
 
-  // Kullanıcı mesajını ekrana ekle
   addMessage(userInput, "user-message");
 
-  // API'ye istek gönder
   let response = await fetch("/ask", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question: userInput }),
   });
 
   let data = await response.json();
 
-  // Chatbot'un yanıtını ekrana ekle
-  addMessage(data.answer, "bot-message");
+  // Seslendirme butonuyla bot mesajı ekle
+  addBotMessageWithSpeakBtn(data.answer);
 
-  // Giriş kutusunu temizle
   document.getElementById("user-input").value = "";
 }
 
-// 🎨 Mesajları sohbet ekranına ekleme
+// Kullanıcı mesajlarını ekrana yazdırma
 function addMessage(text, className) {
   let chatBox = document.getElementById("chat-box");
   let messageDiv = document.createElement("div");
   messageDiv.className = "message " + className;
   messageDiv.innerText = text;
   chatBox.appendChild(messageDiv);
-
-  // En yeni mesaja kaydır
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+// Bot mesajını seslendirme butonu ile ekleme
+function addBotMessageWithSpeakBtn(text) {
+  let chatBox = document.getElementById("chat-box");
+
+  let messageDiv = document.createElement("div");
+  messageDiv.className = "message bot-message";
+  messageDiv.innerText = text;
+
+  // Seslendirme butonu oluştur
+  let speakBtn = document.createElement("button");
+  speakBtn.className = "speak-btn";
+  speakBtn.innerText = "🔊";
+
+  // Seslendirme durumunu tut
+  let isSpeaking = false;
+  let utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "tr-TR";
+
+  speakBtn.onclick = () => {
+    if (!isSpeaking) {
+      // Eğer konuşmuyorsa başlat
+      speechSynthesis.cancel(); // önceki varsa iptal et
+      speechSynthesis.speak(utterance);
+      isSpeaking = true;
+    } else if (speechSynthesis.speaking) {
+      // Şu an konuşuyorsa durdur
+      speechSynthesis.cancel();
+      isSpeaking = false;
+    } else {
+      // Üçüncü basış ve sonrası: yeniden başlat
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utterance);
+      isSpeaking = true;
+    }
+  };
+
+  // Konuşma bittiğinde isSpeaking durumunu sıfırla
+  utterance.onend = () => {
+    isSpeaking = false;
+  };
+
+  messageDiv.appendChild(speakBtn);
+  chatBox.appendChild(messageDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// 🔈 Metni seslendirme fonksiyonu
+function speak(text) {
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.lang = "tr-TR";
+  speechSynthesis.speak(speech);
+}
+
+// 🎙️ Speech-to-text mikrofon özelliği
+document.addEventListener("DOMContentLoaded", () => {
+  const voiceBtn = document.getElementById("voice-btn");
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = "tr-TR";
+
+    voiceBtn.onclick = () => {
+      recognition.start();
+      voiceBtn.innerText = "🎙️ Dinleniyor...";
+    };
+
+    recognition.onresult = (event) => {
+      const spokenText = event.results[0][0].transcript;
+      document.getElementById("user-input").value = spokenText;
+      sendMessage();
+    };
+
+    recognition.onend = () => {
+      voiceBtn.innerText = "🎤";
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Ses Tanıma Hatası:", event.error);
+      voiceBtn.innerText = "🎤";
+    };
+  } else {
+    voiceBtn.disabled = true;
+    alert("Tarayıcınız ses tanımayı desteklemiyor!");
+  }
+});

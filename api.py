@@ -1,4 +1,4 @@
-# çalıştırmak için : uvicorn api:app --reload
+# çalıştırmak için : uvicorn api:app --reload    http://localhost:8000/
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -12,42 +12,42 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, Request
 
-# 📌 Çevre değişkenlerini yükle
+#  Çevre değişkenlerini yükle
 load_dotenv()
 
-# 📌 FastAPI uygulamasını başlat
+#  FastAPI uygulamasını başlat
 app = FastAPI()
 
-# 📌 Static ve Template dosyalarını bağla
+#  Static ve Template dosyalarını bağla
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# 📌 Ana sayfa (HTML arayüzü)
+#  Ana sayfa (HTML arayüzü)
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# 📌 ChromaDB ve LLM modelini yükleme
+#  ChromaDB ve LLM modelini yükleme
 if "vectorstore" not in globals():
     print("📖 PDF yükleniyor ve işleniyor...")
     
-    # 📌 Google Gemini Embedding modelini başlat
+    #  Google Gemini Embedding modelini başlat
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    # 📌 ChromaDB'yi başlat ve yükle
+    #  ChromaDB'yi başlat ve yükle
     vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 
-    # 📌 Retriever oluştur (benzerlik araması yapacak)
+    #  Retriever oluştur 
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
-    # 📌 Google Gemini LLM'yi başlat
+    #  Google Gemini LLM'yi başlat
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-pro",
         temperature=0.3,
         max_tokens=500
     )
 
-    # 📌 Sistem Prompt'u
+    #  Sistem Prompt'u
     system_prompt = (
         "Sen bir yardımcı asistansın ve yalnızca futbol kuralları hakkında sorulara cevap veriyorsun. "
         "Yanıtlarını yalnızca verilen bağlam içeriğinden oluştur. "
@@ -56,7 +56,7 @@ if "vectorstore" not in globals():
         "{context}"
     )
 
-    # 📌 Prompt Şablonu
+    #  Prompt Şablonu
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
@@ -64,17 +64,17 @@ if "vectorstore" not in globals():
         ]
     )
 
-    # 📌 Question-Answer zincirini oluştur
+    #  Question-Answer zincirini oluştur
     question_answer_chain = create_stuff_documents_chain(llm, prompt)
 
-    # 📌 Retriever + LLM kombinasyonu ile RAG zincirini oluştur
+    #  Retriever + LLM kombinasyonu ile RAG zincirini oluştur
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
-# 📌 Kullanıcıdan gelen sorguyu tanımlamak için bir model oluştur
+#  Kullanıcıdan gelen sorguyu tanımlamak için bir model oluştur
 class QueryRequest(BaseModel):
     question: str
 
-# 📌 Chatbot için bir API endpoint'i oluştur
+#  Chatbot için bir API endpoint'i oluştur
 @app.post("/ask")
 def ask_question(request: QueryRequest):
     query = request.question
