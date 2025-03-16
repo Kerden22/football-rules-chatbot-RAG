@@ -1,85 +1,72 @@
 
 # ⚽ Futbol Kuralları Chatbot
 
-Bu proje, futbol kuralları hakkında kullanıcıların sorularına yanıt veren, hızlı ve etkili bir chatbot sistemidir. Chatbot, FastAPI ve Streamlit ile geliştirilmiştir ve Google Gemini yapay zeka modellerini kullanmaktadır.
+Bu proje, futbol kuralları hakkında kullanıcıların sorularına yanıt veren, hızlı ve etkili bir chatbot sistemidir. Chatbot, FastAPI ve Streamlit kullanılarak geliştirilmiştir ve Google Gemini AI modellerini temel alan gelişmiş Retrieval-Augmented Generation (RAG) sistemiyle güçlendirilmiştir.
 
-## 📁 Proje Yapısı
+## 🛠️ Kullanılan Teknolojiler
+
+-   **FastAPI** (Backend ve API Yönetimi)
+-   **Streamlit** (Alternatif interaktif chatbot arayüzü)
+-   **LangChain & ChromaDB** (PDF İçerik Yükleme ve Vektör Veri Depolama)
+-   **Google Gemini API** (Chat ve Embeddings)
+-   **HTML, CSS ve JavaScript** (Kullanıcı dostu ve interaktif web arayüzü)
+-   **SpeechRecognition ve Web Speech API** (Sesli etkileşim özellikleri)
+
+## 📂 Proje Yapısı
 
 ```
-FUTBOL_CHATBOT
-├── .env
-├── api.py
-├── bot.py
-├── ChatBot.ipynb
-├── FutbolKuralları.pdf
-├── requirements.txt
-├── chroma_db
+Futbol_ChatBot
+│
+├── api.py (FastAPI Backend)
+├── bot.py (Streamlit Chatbot Arayüzü)
+├── chat_history.json (Chat geçmişi veritabanı)
+├── chroma_db (Vektör veritabanı)
 ├── static
 │   ├── script.js
 │   └── styles.css
 ├── templates
 │   └── index.html
+├── chat_history.json (Chat geçmişi kayıtları)
+├── requirements.txt
+└── .env (API anahtarları ve hassas veriler)
 
 ```
 
-## 🚀 Kurulum ve Kullanım
+## 🚀 Kurulum ve Çalıştırma
 
-### 1. Ortam Kurulumu
+### 1. Gereksinimleri Yükleyin
 
 ```bash
 pip install -r requirements.txt
 
 ```
 
-### 2. API Başlatma (FastAPI)
-
-Öncelikle `.env` dosyasına Google Gemini 1.5 Pro API anahtarınızı ekleyin:
-
-```env
-GOOGLE_API_KEY=YOUR_API_KEY
-
-```
-
-API anahtarını almak için: [Google AI Studio](https://aistudio.google.com/prompts/new_chat)
-
-Daha sonra API'yi başlatın:
+### 2. FastAPI Backend Başlatma
 
 ```bash
 uvicorn api:app --reload
 
 ```
 
-Tarayıcınızda `http://localhost:8000` adresine giderek chatbot'u web üzerinden kullanabilirsiniz.
+Tarayıcınızda **[http://localhost:8000](http://localhost:8000/)** adresine giderek chatbot'un web sürümüne ulaşabilirsiniz.
 
-
-![Image](https://github.com/user-attachments/assets/48b2e721-9702-42d0-bd62-da7b73391115)
-
-### 3. Streamlit Uygulamasını Başlatma
+### 2. Streamlit Arayüzünü Başlatma
 
 ```bash
 streamlit run bot.py
 
 ```
 
-Tarayıcınızda açılan Streamlit arayüzü ile doğrudan etkileşim kurabilirsiniz.
+Açılan tarayıcı penceresinde alternatif Streamlit arayüzünü kullanabilirsiniz.
 
-![Image](https://github.com/user-attachments/assets/51125792-4a32-4515-8304-62cc8c8bcdbd)
+## 🎯 Özellikler
 
-## 🛠️ Teknolojiler
+-   **Chat Oturum Yönetimi:** Her sohbetin ayrı kaydedilmesi, kullanıcıların eski sohbetlere erişebilmesi
+-   **Sohbet Geçmişi:** Kullanıcılar sohbet geçmişlerini görüntüleyebilir, eski sohbetleri yeniden açabilir ve kaldıkları yerden devam edebilirler.
+-   **Sesli Komut Özelliği**: Kullanıcılar "Asistan" kelimesini söyleyerek sesli sorgulama yapabilir.
+-   **Sesli Yanıtlar**: Bot cevapları sesli olarak okunabilir.
+-   **Kolay ve Estetik Tasarım**: Kullanımı basit ve göz alıcı kullanıcı arayüzü ile etkileşim sağlar.
 
--   **Python**
--   **FastAPI**
--   **Streamlit**
--   **LangChain**
--   **ChromaDB**
--   **Google Gemini (Embeddings ve LLM)**
+## 📞 İletişim
 
-## 📌 Özellikler
-
--   Futbol kuralları ile ilgili hızlı yanıtlar
--   PDF belge üzerinden bilgi çıkarımı
--   Kullanıcı dostu arayüz
-
-
-
-## Mahmut Kerem Erden - k.erden03@gmail.com
+**Mahmut Kerem Erden** - [k.erden03@gmail.com](mailto:k.erden03@gmail.com)
