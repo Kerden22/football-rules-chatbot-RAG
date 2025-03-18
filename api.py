@@ -93,7 +93,7 @@ def ask_question(request: QueryRequest):
     return {"question": query, "answer": answer}
 
 # -------------------------------------------------------------------
-# AŞAĞIDAN İTİBAREN YENİ EKLENEN KODLAR
+# Chat_History json için kodlar
 # -------------------------------------------------------------------
 
 SESSIONS_FILE = "chat_history.json"
@@ -207,3 +207,31 @@ def add_message(session_id: str, request: QueryRequest):
     # Bot cevabını döndürüyoruz
     return {"question": user_msg, "answer": bot_msg}
 
+@app.delete("/sessions/{session_id}")
+def delete_session(session_id: str):
+    data = load_chat_history()
+    session = find_session(data, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    data["sessions"].remove(session)
+    save_chat_history(data)
+
+    return {"status": "success", "id": session_id}
+
+class RenameRequest(BaseModel):
+    title: str
+
+@app.patch("/sessions/{session_id}")
+def rename_session(session_id: str, request: RenameRequest):
+    """
+    Belirli bir oturumun başlığını (title) değiştirir.
+    """
+    data = load_chat_history()
+    session = find_session(data, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session["title"] = request.title
+    save_chat_history(data)
+    return {"status": "renamed", "id": session_id, "newTitle": request.title}

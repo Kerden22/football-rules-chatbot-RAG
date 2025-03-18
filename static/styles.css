@@ -27,6 +27,8 @@ body {
   padding: 15px;
   border-right: 2px solid #333;
   overflow-y: auto;
+  /* 🔥 Eklendi: Yatay kaydırmayı gizlemek için */
+  overflow-x: hidden;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
@@ -268,4 +270,67 @@ button:hover {
   background: linear-gradient(135deg, #007bff, #00d4ff);
   color: #121212;
   font-weight: 600;
+}
+
+/* --- YENİ EKLENEN KOD: Çöp Kutusu ve Düzenle İkonu Stilleri --- */
+.delete-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  font-size: 16px; /* Daha küçük ve modern görünüm */
+  margin-left: 8px;
+}
+
+.rename-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  font-size: 16px; /* Daha küçük ve modern görünüm */
+  margin-left: 8px;
+}
+
+/* --- YENİ EKLENEN KOD: Onay Modalı Stilleri (Silme) --- */
+.modal {
+  display: none; /* Varsayılan gizli */
+  position: fixed;
+  z-index: 1000; /* Üstte */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5); /* Yarı saydam koyu arka plan */
+}
+
+.modal-content {
+  background-color: #1e1e1e;
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 300px;
+  border-radius: 10px;
+  text-align: center;
+  color: white;
+}
+
+.modal-buttons {
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  background: linear-gradient(135deg, #007bff, #00d4ff);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  margin: 0 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease-in-out;
+}
+
+.modal-buttons button:hover {
+  background: linear-gradient(135deg, #0056b3, #0099cc);
 }

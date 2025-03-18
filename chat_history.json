@@ -57,28 +57,22 @@
         {
           "role": "assistant",
           "content": "Sarı kart, bir futbolcunun yaptığı kural dışı bir hareket sonucu hakem tarafından verilen bir uyarıdır. İki sarı kart, oyuncunun oyundan atılmasıyla sonuçlanan kırmızı karta dönüşür.  Metinde sarı kartın hangi durumlarda verildiği ile ilgili spesifik bilgi yer almıyor."
-        }
-      ]
-    },
-    {
-      "id": "cf6bfed4-891a-40d7-9b9e-07db9659b916",
-      "title": "merhaba",
-      "messages": [
-        {
-          "role": "user",
-          "content": "merhaba"
-        },
-        {
-          "role": "assistant",
-          "content": "Merhaba! Futbol kuralları hakkında sorularınız varsa yanıtlamaya hazırım."
         },
         {
           "role": "user",
-          "content": "Ofsayt nedir"
+          "content": "teşekkürler"
         },
         {
           "role": "assistant",
-          "content": "Ofsayt, bir oyuncunun top kendisine pas atıldığında rakip kale çizgisine rakip takımdan sondan ikinci oyuncudan daha yakın olması durumudur. Ancak, top kendisine pas atıldığında kendi yarı sahasında ise veya topu doğrudan taç atışından, köşe vuruşundan veya kale vuruşundan alıyorsa ofsayt sayılmaz.  \"Bilerek oynama\" ve \"sekme\" arasında ayrım yapma ilkeleri, ofsayt pozisyonundaki bir oyuncunun, rakibinin topa bilerek dokunması durumunda ofsayt olmaması gerektiği beklentisine dayanır."
+          "content": "Rica ederim. Başka sorunuz var mı?"
+        },
+        {
+          "role": "user",
+          "content": "hakem kimdir"
+        },
+        {
+          "role": "assistant",
+          "content": "Hakem, oyun kurallarını uygulamakla yetkili kişidir. Hakemin yetkisi, kendisine atanan maçın başlama vuruşuyla başlar ve maçın bitiş düdüğüyle sona erer.  Hakem, oyuncuların ekipmanlarını kontrol etme yetkisine de sahiptir."
         }
       ]
     }

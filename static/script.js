@@ -137,10 +137,37 @@ function renderSessionList(sessions) {
   sessions.forEach((session) => {
     let sessionDiv = document.createElement("div");
     sessionDiv.className = "session-item";
-    sessionDiv.textContent = session.title; // Oturum başlığı olarak ilk kullanıcı sorusunu kullanıyoruz
+
+    let titleSpan = document.createElement("span");
+    titleSpan.textContent = session.title;
+
+    // Çöp kutusu ikonu ekle
+    let deleteBtn = document.createElement("button");
+    deleteBtn.innerHTML = '<span style="color:red;">🗑️</span>';
+    deleteBtn.className = "delete-btn";
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation(); // sessionDiv onclick tetiklenmesini engelle
+      deleteSession(session.id);
+    };
+
+    // DÜZENLE butonu ekle (✏️)
+    let renameBtn = document.createElement("button");
+    renameBtn.innerHTML = '<span style="color:yellow;">✏️</span>';
+    renameBtn.className = "rename-btn";
+    renameBtn.onclick = (e) => {
+      e.stopPropagation();
+      showRenameModal(session.id, session.title);
+    };
+
+    // Oturuma tıklanınca yükle
     sessionDiv.onclick = () => {
       loadSession(session.id);
     };
+
+    // Eklemeleri DOM'a sırayla koy
+    sessionDiv.appendChild(titleSpan);
+    sessionDiv.appendChild(renameBtn);
+    sessionDiv.appendChild(deleteBtn);
     container.appendChild(sessionDiv);
   });
 }
@@ -221,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("📨 Algılanan soru:", userQuery);
       sendMessage(userQuery);
       isListeningForQuery = false;
-      setTimeout(() => recognition.start(), 1000); // Tekrar "Asistan" dinlemesi başlat
+      setTimeout(() => recognition.start(), 1000); // Tekrar \"Asistan\" dinlemesi başlat
     };
 
     queryRecognition.onerror = (event) => {
@@ -235,3 +262,90 @@ document.addEventListener("DOMContentLoaded", () => {
     listenForQuery();
   };
 });
+
+// Oturum silme işlemi (API isteği ve yenileme)
+function deleteSession(sessionId) {
+  showDeleteConfirmation(sessionId);
+}
+
+// Onay Modalı (Silme)
+function showDeleteConfirmation(sessionId) {
+  const modal = document.getElementById("confirm-modal");
+  modal.style.display = "block";
+
+  const yesBtnOld = document.getElementById("confirm-yes");
+  const noBtnOld = document.getElementById("confirm-no");
+
+  let yesBtn = yesBtnOld.cloneNode(true);
+  yesBtnOld.parentNode.replaceChild(yesBtn, yesBtnOld);
+
+  let noBtn = noBtnOld.cloneNode(true);
+  noBtnOld.parentNode.replaceChild(noBtn, noBtnOld);
+
+  yesBtn.onclick = function () {
+    fetch(`/sessions/${sessionId}`, { method: "DELETE" })
+      .then((response) => {
+        if (response.ok) {
+          fetchSessions();
+          document.getElementById("chat-box").innerHTML = "";
+          currentSessionId = null;
+        } else {
+          alert("Silme işlemi başarısız oldu.");
+        }
+      })
+      .catch((error) => console.error("Error deleting session:", error));
+    modal.style.display = "none";
+  };
+
+  noBtn.onclick = function () {
+    modal.style.display = "none";
+  };
+}
+
+// YENİ EKLENEN KOD: Oturum Adını Değiştirme (Modal)
+function showRenameModal(sessionId, currentTitle) {
+  const renameModal = document.getElementById("rename-modal");
+  renameModal.style.display = "block";
+
+  let renameInput = document.getElementById("rename-input");
+  renameInput.value = currentTitle || "";
+
+  let yesBtnOld = document.getElementById("rename-yes");
+  let noBtnOld = document.getElementById("rename-no");
+
+  let yesBtn = yesBtnOld.cloneNode(true);
+  yesBtnOld.parentNode.replaceChild(yesBtn, yesBtnOld);
+
+  let noBtn = noBtnOld.cloneNode(true);
+  noBtnOld.parentNode.replaceChild(noBtn, noBtnOld);
+
+  yesBtn.onclick = function () {
+    let newTitle = renameInput.value.trim();
+    if (!newTitle) {
+      renameModal.style.display = "none";
+      return;
+    }
+    fetch(`/sessions/${sessionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTitle }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          alert("Oturum adı güncellenemedi!");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.newTitle) {
+          fetchSessions();
+        }
+      })
+      .catch((error) => console.error("Error renaming session:", error));
+    renameModal.style.display = "none";
+  };
+
+  noBtn.onclick = function () {
+    renameModal.style.display = "none";
+  };
+}

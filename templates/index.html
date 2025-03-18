@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>⚽ Futbol Chatbot</title>
     <link rel="stylesheet" href="/static/styles.css" />
+    <!-- FontAwesome çöp kutusu ikonu -->
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
   </head>
   <body>
     <div class="wrapper">
@@ -30,6 +32,29 @@
             <button onclick="sendMessage()">Gönder</button>
             <button id="voice-btn">🎤</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onay Modalı (Silme) -->
+    <div id="confirm-modal" class="modal">
+      <div class="modal-content">
+        <p>Bu sohbeti silmek istediğinize emin misiniz?</p>
+        <div class="modal-buttons">
+          <button id="confirm-yes">Evet</button>
+          <button id="confirm-no">İptal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- YENİ EKLENEN KOD: Rename Modalı -->
+    <div id="rename-modal" class="modal">
+      <div class="modal-content">
+        <p>Yeni oturum adı girin:</p>
+        <input type="text" id="rename-input" />
+        <div class="modal-buttons">
+          <button id="rename-yes">Kaydet</button>
+          <button id="rename-no">İptal</button>
         </div>
       </div>
     </div>
