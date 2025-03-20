@@ -2,6 +2,8 @@
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+from langchain_community.document_loaders import PyPDFLoader  
+from langchain_text_splitters import RecursiveCharacterTextSplitter  
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from dotenv import load_dotenv
@@ -35,12 +37,21 @@ def home(request: Request):
 #  ChromaDB ve LLM modelini yükleme
 if "vectorstore" not in globals():
     print("📖 PDF yükleniyor ve işleniyor...")
+
+    # PDF'yi yükle ve metin haline getir
+    loader = PyPDFLoader("FutbolKuralları.pdf")  
+    data = loader.load()  
+    all_text = "\n".join([page.page_content for page in data])  
+
+    # Metni chunk'lara böl
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)  
+    docs = text_splitter.split_text(all_text)  
     
     #  Google Gemini Embedding modelini başlat
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
-    #  ChromaDB'yi başlat ve yükle
-    vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
+    # Chunk'ları (docs) kullanarak ilk kez ChromaDB oluştur
+    vectorstore = Chroma.from_texts(docs, embeddings, persist_directory="./chroma_db")
 
     #  Retriever oluştur 
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 10})

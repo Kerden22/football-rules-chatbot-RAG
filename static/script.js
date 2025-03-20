@@ -118,7 +118,7 @@ function addBotMessageWithSpeakBtn(text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// --- YENİ OTURUM YÖNETİMİ KISMI ---
+// --- OTURUM YÖNETİMİ KISMI ---
 
 // Mevcut tüm oturumları GET /sessions endpoint'i ile getirir ve sol panelde listeler
 function fetchSessions() {
@@ -193,9 +193,7 @@ function renderSessionMessages(messages) {
   });
 }
 
-// --- SON YENİ OTURUM YÖNETİMİ KISMI ---
-
-// 🎙️ Sürekli dinleme ve "Asistan" tetiklemesi
+//  Sürekli dinleme ve "Asistan" tetiklemesi
 document.addEventListener("DOMContentLoaded", () => {
   const voiceBtn = document.getElementById("voice-btn");
   const SpeechRecognition =

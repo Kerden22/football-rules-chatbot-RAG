@@ -16,7 +16,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 load_dotenv()
 
 # Streamlit başlık
-st.title("⚽ Futbol Kuralları Chatbot'u 🎤")
+st.title("⚽ Futbol Kuralları Chatbot'u")
 
 # PDF'yi ve vektör veritabanını sadece bir kez yükle
 if "vectorstore" not in st.session_state:
