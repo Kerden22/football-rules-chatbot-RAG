@@ -1,6 +1,5 @@
 # çalıştırmak için : uvicorn api:app --reload    http://localhost:8000/
 
-from fastapi import FastAPI
 from pydantic import BaseModel
 from langchain_community.document_loaders import PyPDFLoader  
 from langchain_text_splitters import RecursiveCharacterTextSplitter  
@@ -18,6 +17,9 @@ import os
 import uuid
 from typing import Optional
 from fastapi import HTTPException
+
+import base64
+import requests
 
 #  Çevre değişkenlerini yükle
 load_dotenv()
@@ -85,6 +87,91 @@ if "vectorstore" not in globals():
 
     #  Retriever + LLM kombinasyonu ile RAG zincirini oluştur
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
+
+#  Hugging Face API anahtarı ve modelleri için ayarlar
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
+HF_MODEL_ID = "runwayml/stable-diffusion-v1-5"  # Görsel üretimi için model
+MUSICGEN_MODEL_ID = "facebook/musicgen-small"  # Müzik üretimi için model
+
+######################################
+# Stability AI API ile Görsel Üretimi
+######################################
+def generate_image(prompt: str) -> str:
+    """
+    Stability AI API kullanarak, önce verilen promptu Türkçeden İngilizceye çevirir,
+    ardından Stable Diffusion ile görsel üretir ve gelen JSON cevabından
+    base64 kodlanmış görseli döndürür.
+    """
+    # Türkçe promptu İngilizceye çevirmek için yardımcı fonksiyon
+    def translate_to_english(text: str) -> str:
+        try:
+            translation_response = requests.get(
+                "https://api.mymemory.translated.net/get",
+                params={"q": text, "langpair": "tr|en"}
+            )
+            if translation_response.status_code == 200:
+                data = translation_response.json()
+                translated_text = data.get("responseData", {}).get("translatedText", text)
+                return translated_text
+            else:
+                return text
+        except Exception as ex:
+            print("Translation error:", ex)
+            return text
+
+    # Girilen promptu İngilizceye çeviriyoruz
+    english_prompt = translate_to_english(prompt)
+
+    STABILITY_API_KEY = os.getenv("STABILITY_API_KEY", "")
+    if not STABILITY_API_KEY:
+        raise Exception("STABILITY_API_KEY is not set in .env")
+    try:
+        response = requests.post(
+            url="https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-image",
+            headers={
+                "Authorization": f"Bearer {STABILITY_API_KEY}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            json={
+                "text_prompts": [{"text": english_prompt}],
+                "cfg_scale": 7,
+                "height": 512,
+                "width": 512,
+                "samples": 1,
+                "steps": 30,
+            },
+        )
+        if response.status_code != 200:
+            print("Stability API error:", response.text)
+            raise Exception("Stability API image generation failed")
+        image_base64 = response.json()["artifacts"][0]["base64"]
+        return image_base64
+    except Exception as e:
+        print("Error in generate_image:", e)
+        raise Exception(f"Stability API image generation error: {e}")
+
+######################################
+# Hugging Face MusicGen ile Müzik Üretimi
+######################################
+def generate_music(prompt: str) -> str:
+    if not HUGGINGFACE_API_KEY:
+        raise Exception("HUGGINGFACE_API_KEY is not set in .env")
+    api_url = f"https://api-inference.huggingface.co/models/{MUSICGEN_MODEL_ID}"
+    headers = {
+        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {"inputs": prompt}
+    response = requests.post(api_url, headers=headers, json=payload)
+    if response.status_code != 200:
+        error_message = f"HuggingFace MusicGen API error: {response.text}"
+        print("Müzik üretimi sırasında hata oluştu:")
+        print(error_message)
+        raise Exception(error_message)
+    audio_bytes = response.content
+    b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+    return b64_audio
 
 #  Kullanıcıdan gelen sorguyu tanımlamak için bir model oluştur
 class QueryRequest(BaseModel):
@@ -177,17 +264,59 @@ def create_session(request: QueryRequest):
 
     # Yeni session oluştur
     session_id = str(uuid.uuid4())
-    user_msg = request.question
-    bot_msg = get_rag_response(user_msg)
+    user_msg = request.question.strip()
 
-    new_session = {
-        "id": session_id,
-        "title": user_msg,  # Oturumun başlığı ilk sorudan
-        "messages": [
-            {"role": "user", "content": user_msg},
-            {"role": "assistant", "content": bot_msg}
-        ]
-    }
+    if user_msg.lower().startswith("müzik üret:"):
+        prompt = user_msg[len("müzik üret:"):].strip()
+        try:
+            b64_audio = generate_music(prompt)
+            new_session = {
+                "id": session_id,
+                "title": user_msg[:40],
+                "messages": [
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant_audio", "content": b64_audio}
+                ]
+            }
+        except Exception as e:
+            new_session = {
+                "id": session_id,
+                "title": "Müzik Üretim Hatası",
+                "messages": [
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant", "content": "Müzik üretimi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."}
+                ]
+            }
+    elif user_msg.lower().startswith("resim üret:"):
+        prompt = user_msg[len("resim üret:"):].strip()
+        try:
+            b64_image = generate_image(prompt)
+            new_session = {
+                "id": session_id,
+                "title": user_msg[:40],
+                "messages": [
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant_image", "content": b64_image}
+                ]
+            }
+        except Exception as e:
+            new_session = {
+                "id": session_id,
+                "title": "Görsel Üretim Hatası",
+                "messages": [
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant", "content": "Görsel üretimi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."}
+                ]
+            }
+    else:
+        new_session = {
+            "id": session_id,
+            "title": user_msg,
+            "messages": [
+                {"role": "user", "content": user_msg},
+                {"role": "assistant", "content": get_rag_response(user_msg)}
+            ]
+        }
 
     data["sessions"].append(new_session)
     save_chat_history(data)
@@ -205,18 +334,34 @@ def add_message(session_id: str, request: QueryRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    user_msg = request.question
-    bot_msg = get_rag_response(user_msg)
+    user_msg = request.question.strip()
 
-    # Mesajları ekle
-    session["messages"].append({"role": "user", "content": user_msg})
-    session["messages"].append({"role": "assistant", "content": bot_msg})
+    if user_msg.lower().startswith("müzik üret:"):
+        prompt = user_msg[len("müzik üret:"):].strip()
+        try:
+            b64_audio = generate_music(prompt)
+            session["messages"].append({"role": "user", "content": user_msg})
+            session["messages"].append({"role": "assistant_audio", "content": b64_audio})
+        except Exception as e:
+            session["messages"].append({"role": "user", "content": user_msg})
+            session["messages"].append({"role": "assistant", "content": "Müzik üretimi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."})
+    elif user_msg.lower().startswith("resim üret:"):
+        prompt = user_msg[len("resim üret:"):].strip()
+        try:
+            b64_image = generate_image(prompt)
+            session["messages"].append({"role": "user", "content": user_msg})
+            session["messages"].append({"role": "assistant_image", "content": b64_image})
+        except Exception as e:
+            session["messages"].append({"role": "user", "content": user_msg})
+            session["messages"].append({"role": "assistant", "content": "Görsel üretimi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."})
+    else:
+        session["messages"].append({"role": "user", "content": user_msg})
+        bot_msg = get_rag_response(user_msg)
+        session["messages"].append({"role": "assistant", "content": bot_msg})
 
-    # Dosyayı güncelle
     save_chat_history(data)
 
-    # Bot cevabını döndürüyoruz
-    return {"question": user_msg, "answer": bot_msg}
+    return {"question": user_msg, "answer": "OK"}
 
 @app.delete("/sessions/{session_id}")
 def delete_session(session_id: str):

@@ -21,17 +21,57 @@
       <div class="chat-wrapper">
         <div class="chat-container">
           <div class="chat-header">⚽ Futbol Chatbot</div>
+
+          <!-- Dosya Yükleme Bölümü -->
+          <div
+            class="upload-section"
+            style="
+              padding: 10px;
+              text-align: center;
+              border-bottom: 1px solid #444;
+            "
+          >
+            <input type="file" id="document-input" accept=".pdf,.txt,.docx" />
+            <button onclick="uploadDocument()">Belge Yükle</button>
+            <button onclick="resetDocument()">Sıfırla</button>
+          </div>
+          <!-- /Dosya Yükleme Bölümü -->
+
           <div class="chat-box" id="chat-box"></div>
           <div class="input-container">
             <input
               type="text"
               id="user-input"
-              placeholder="Bir soru sor..."
+              placeholder="Bir soru sor (örneğin: 'resim üret: ...' veya 'müzik üret: ...')"
               onkeypress="handleKeyPress(event)"
             />
             <button onclick="sendMessage()">Gönder</button>
             <button id="voice-btn">🎤</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Sağ Üst Bilgilendirici Kartlar -->
+      <div id="info-cards">
+        <div class="info-card">
+          <h3>🎨 &amp; 🎵 Görsel ve Müzik Üretimi</h3>
+          <p>
+            Eğer mesajınız <code>resim üret:</code> veya
+            <code>müzik üret:</code> ile başlarsa, sistemimiz sizin tarifinize
+            uygun görseller ve müzikler oluşturur.
+          </p>
+          <small
+            ><b>Örnek:</b> resim üret: kırmızı bir bisikletli çocuk / müzik
+            üret: enerjik bir rock melodisi</small
+          >
+        </div>
+        <div class="info-card">
+          <h3>⚽ Futbol Kuralları Chatbotu</h3>
+          <p>
+            Bu chatbot, yalnızca futbol kuralları hakkında sorulara cevap verir
+            ve doğru, kısa bilgiler sunar.
+          </p>
+          <small><b>Örnek:</b> Ofsayt nedir?</small>
         </div>
       </div>
     </div>
@@ -47,7 +87,7 @@
       </div>
     </div>
 
-    <!-- YENİ EKLENEN KOD: Rename Modalı -->
+    <!-- Rename Modalı -->
     <div id="rename-modal" class="modal">
       <div class="modal-content">
         <p>Yeni oturum adı girin:</p>

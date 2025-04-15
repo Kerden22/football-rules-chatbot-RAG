@@ -18,6 +18,7 @@ body {
   height: 90vh;
   justify-content: center;
   align-items: center;
+  position: relative; /* Info kartlar için konumlandırma */
 }
 
 /* 📌 Chat Geçmişi Paneli (En Sola Yapışık) */
@@ -27,14 +28,13 @@ body {
   padding: 15px;
   border-right: 2px solid #333;
   overflow-y: auto;
-  /* 🔥 Eklendi: Yatay kaydırmayı gizlemek için */
   overflow-x: hidden;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 90vh;
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
@@ -46,10 +46,11 @@ body {
   justify-content: center;
   align-items: center;
   flex-grow: 1;
-  margin-left: 250px; /* 📌 Chat geçmişinin genişliği kadar kaydırıldı */
+  margin-left: 250px; /* Chat geçmişinin genişliği kadar boşluk */
   width: calc(100% - 250px);
 }
 
+/* Chat Container */
 .chat-container {
   width: 500px !important;
   max-width: 90%;
@@ -61,7 +62,7 @@ body {
   transition: all 0.3s ease-in-out;
 }
 
-/* 🔵 Üst Başlık */
+/* Üst Başlık */
 .chat-header {
   background: linear-gradient(135deg, #007bff, #00d4ff);
   color: white;
@@ -73,7 +74,7 @@ body {
   border-top-right-radius: 15px;
 }
 
-/* 📝 Chatbox İçerik Alanı */
+/* Chatbox İçerik Alanı */
 .chat-box {
   height: 500px !important;
   overflow-y: auto;
@@ -85,7 +86,7 @@ body {
   transition: all 0.3s ease-in-out;
 }
 
-/* 🗨️ Mesaj Baloncukları */
+/* Mesaj Baloncukları */
 .message {
   padding: 12px;
   border-radius: 15px;
@@ -118,7 +119,13 @@ body {
   padding: 10px;
 }
 
-/* 📝 Giriş Alanı */
+/* Resim Mesajları */
+.bot-message img {
+  max-width: 200px;
+  border-radius: 8px;
+}
+
+/* Giriş Alanı */
 .input-container {
   display: flex;
   padding: 10px;
@@ -128,7 +135,7 @@ body {
   border-bottom-right-radius: 15px;
 }
 
-/* 🖊️ Yazı Girişi */
+/* Yazı Girişi */
 input {
   flex: 1;
   padding: 12px;
@@ -139,7 +146,7 @@ input {
   font-size: 14px;
 }
 
-/* 🔘 Butonlar */
+/* Butonlar */
 button {
   background: linear-gradient(135deg, #007bff, #00d4ff);
   color: white;
@@ -157,7 +164,7 @@ button:hover {
   transform: scale(1.05);
 }
 
-/* 🎙️ Ses Butonu */
+/* Ses Butonu */
 #voice-btn {
   background: linear-gradient(135deg, #28a745, #6bcf64);
 }
@@ -166,7 +173,7 @@ button:hover {
   background: linear-gradient(135deg, #1e7e34, #57c447);
 }
 
-/* 🔊 Sesli Okuma Butonu */
+/* Sesli Okuma Butonu */
 .speak-btn {
   background: none;
   border: none;
@@ -180,7 +187,7 @@ button:hover {
   color: #28a745;
 }
 
-/* 📜 Kaydırma Çubuğu */
+/* Kaydırma Çubuğu */
 .chat-box::-webkit-scrollbar {
   width: 6px;
 }
@@ -190,14 +197,13 @@ button:hover {
   border-radius: 10px;
 }
 
-/* 📱 Mobil Uyumluluk */
+/* Mobil Uyumluluk */
 @media (max-width: 768px) {
   .wrapper {
     flex-direction: column;
     width: 100%;
     height: auto;
   }
-
   .history-container {
     width: 100%;
     border-right: none;
@@ -206,37 +212,27 @@ button:hover {
     position: relative;
     left: auto;
   }
-
   .chat-wrapper {
     width: 100%;
     margin-left: 0;
   }
-
   .chat-box {
     height: 400px;
   }
-
   input {
     font-size: 13px;
   }
-
   button {
     font-size: 13px;
     padding: 10px;
   }
 }
-/* Geliştirilmiş Chat Geçmişi Tasarımı */
 
-/* 🔥 1) Chat Geçmişi Paneli (history-container) Arka Plan */
+/* Geliştirilmiş Chat Geçmişi Tasarımı */
 .history-container {
-  background: linear-gradient(
-    135deg,
-    #242424,
-    #1e1e1e
-  ) !important; /* Degrade */
+  background: linear-gradient(135deg, #242424, #1e1e1e) !important;
 }
 
-/* 🔥 2) Chat Geçmişi Başlık Stili */
 .history-container h3 {
   font-size: 18px;
   margin-bottom: 15px;
@@ -245,7 +241,6 @@ button:hover {
   font-weight: 600;
 }
 
-/* 🔥 3) Oturum Liste Elemanları (session-item) */
 .session-item {
   width: 100%;
   padding: 12px;
@@ -259,26 +254,23 @@ button:hover {
   font-weight: 500;
 }
 
-/* Hover ve Tıklama Etkileri */
 .session-item:hover {
   background: #3a3a3a;
   transform: scale(1.03);
 }
 
-/* Seçili Oturum (İsterseniz JavaScript ile .active ekleyip kaldırabilirsiniz) */
 .session-item.active {
   background: linear-gradient(135deg, #007bff, #00d4ff);
   color: #121212;
   font-weight: 600;
 }
 
-/* --- YENİ EKLENEN KOD: Çöp Kutusu ve Düzenle İkonu Stilleri --- */
 .delete-btn {
   background: none;
   border: none;
   padding: 2px;
   cursor: pointer;
-  font-size: 16px; /* Daha küçük ve modern görünüm */
+  font-size: 16px;
   margin-left: 8px;
 }
 
@@ -287,21 +279,20 @@ button:hover {
   border: none;
   padding: 2px;
   cursor: pointer;
-  font-size: 16px; /* Daha küçük ve modern görünüm */
+  font-size: 16px;
   margin-left: 8px;
 }
 
-/* --- YENİ EKLENEN KOD: Onay Modalı Stilleri (Silme) --- */
 .modal {
-  display: none; /* Varsayılan gizli */
+  display: none;
   position: fixed;
-  z-index: 1000; /* Üstte */
+  z-index: 1000;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0, 0, 0, 0.5); /* Yarı saydam koyu arka plan */
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-content {
@@ -333,4 +324,70 @@ button:hover {
 
 .modal-buttons button:hover {
   background: linear-gradient(135deg, #0056b3, #0099cc);
+}
+
+/* Sağ Üst Bilgilendirici Kartlar */
+#info-cards {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 999;
+}
+
+.info-card {
+  background: #1e1e2f;
+  color: #f1f1f1;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+  border-left: 4px solid #00d4ff;
+}
+
+.info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  background: #292943;
+}
+
+.info-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.info-card code {
+  background: #333a50;
+  color: #fffc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.info-card small {
+  color: #bbb;
+}
+
+.modern-btn {
+  background: linear-gradient(135deg, #007bff, #00d4ff);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s ease-in-out;
+  margin: 5px;
+}
+
+.modern-btn:hover {
+  background: linear-gradient(135deg, #0056b3, #0099cc);
+  transform: scale(1.05);
 }
