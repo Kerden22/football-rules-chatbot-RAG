@@ -12,31 +12,26 @@ def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.post("/ask")
-def ask_question(request_body: QueryRequest):
+def ask_question(request: Request, request_body: QueryRequest):
     query = request_body.question.strip()
-    # Global sorgu (dosya yüklenmemişse)
     answer = get_rag_response(query)
     return {"question": query, "answer": answer}
 
 @router.get("/sessions")
-def list_sessions():
-    data = load_chat_history()
+def list_sessions(request: Request):
+    data = load_chat_history(request)
     return [{"id": s["id"], "title": s["title"]} for s in data.get("sessions", [])]
 
 @router.get("/sessions/{session_id}")
-def get_session(session_id: str):
-    data = load_chat_history()
+def get_session(session_id: str, request: Request):
+    data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
 @router.post("/upload-document")
-async def upload_document(file: UploadFile = File(...)):
-    """
-    Yeni bir doküman yükleyip, dosya türüne (PDF, TXT, DOCX) göre metni çıkarır.
-    Çıkarılan metin, yeni bir oturum (session) olarak kaydedilir.
-    """
+async def upload_document(request: Request, file: UploadFile = File(...)):
     try:
         extracted_text = process_uploaded_file(file)
     except Exception as e:
@@ -52,25 +47,24 @@ async def upload_document(file: UploadFile = File(...)):
             {"role": "system", "content": "Belge başarıyla yüklendi ve işlendi. Şimdi soru sorabilirsiniz."}
         ]
     }
-    data = load_chat_history()
+    data = load_chat_history(request)
     data.setdefault("sessions", []).append(new_session)
-    save_chat_history(data)
+    save_chat_history(request, data)
     return {"session_id": session_id, "message": "Belge başarıyla yüklendi ve işlendi."}
 
-# Yeni Reset Endpoint'i: Oturumun document_text'ini sıfırlayıp, global zincire dönülmesini sağlar.
 @router.post("/sessions/{session_id}/reset-document")
-def reset_document(session_id: str):
-    data = load_chat_history()
+def reset_document(session_id: str, request: Request):
+    data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    session["document_text"] = ""  # document_text sıfırlanıyor
-    save_chat_history(data)
+    session["document_text"] = ""
+    save_chat_history(request, data)
     return {"status": "document reset", "session_id": session_id}
 
 @router.post("/sessions")
-def create_session(request_body: QueryRequest):
-    data = load_chat_history()
+def create_session(request: Request, request_body: QueryRequest):
+    data = load_chat_history(request)
     session_id = str(uuid.uuid4())
     user_msg = request_body.question.strip()
 
@@ -127,19 +121,18 @@ def create_session(request_body: QueryRequest):
         }
 
     data.setdefault("sessions", []).append(new_session)
-    save_chat_history(data)
+    save_chat_history(request, data)
     return new_session
 
 @router.post("/sessions/{session_id}/messages")
-def add_message(session_id: str, request_body: QueryRequest):
-    data = load_chat_history()
+def add_message(session_id: str, request: Request, request_body: QueryRequest):
+    data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     user_msg = request_body.question.strip()
 
-    # Eğer oturumda document_text varsa, dinamik zincir oluşturup, o zincir üzerinden cevap üret.
     if "document_text" in session and session["document_text"].strip():
         try:
             chain = build_rag_chain(session["document_text"])
@@ -174,25 +167,25 @@ def add_message(session_id: str, request_body: QueryRequest):
             bot_msg = get_rag_response(user_msg)
             session["messages"].append({"role": "assistant", "content": bot_msg})
 
-    save_chat_history(data)
+    save_chat_history(request, data)
     return {"question": user_msg, "answer": "OK"}
 
 @router.delete("/sessions/{session_id}")
-def delete_session(session_id: str):
-    data = load_chat_history()
+def delete_session(session_id: str, request: Request):
+    data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     data["sessions"].remove(session)
-    save_chat_history(data)
+    save_chat_history(request, data)
     return {"status": "success", "id": session_id}
 
 @router.patch("/sessions/{session_id}")
-def rename_session(session_id: str, request_body: RenameRequest):
-    data = load_chat_history()
+def rename_session(session_id: str, request: Request, request_body: RenameRequest):
+    data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     session["title"] = request_body.title
-    save_chat_history(data)
+    save_chat_history(request, data)
     return {"status": "renamed", "id": session_id, "newTitle": request_body.title}

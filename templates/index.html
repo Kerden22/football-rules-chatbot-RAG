@@ -3,26 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>⚽ Futbol Chatbot</title>
+    <title>ChatAsistan: Belge & Soru Cevap</title>
     <link rel="stylesheet" href="/static/styles.css" />
-    <!-- FontAwesome çöp kutusu ikonu -->
     <script src="https://kit.fontawesome.com/a076d05399.js"></script>
   </head>
   <body>
+    <!-- Sağ üst çıkış butonu -->
+    <button class="logout-button" onclick="openLogoutModal()">Çıkış Yap</button>
+
     <div class="wrapper">
-      <!-- Sol Panel: Chat Geçmişi ve Yeni Chat Butonu -->
+      <!-- ◂ SOL: Chat geçmişi ▸ -->
       <div class="history-container">
-        <button id="new-chat-btn">Yeni Chat</button>
-        <h3>📜 Chat Geçmişi</h3>
+        <button id="new-chat-btn">Yeni Chat</button>
+        <h3>📜 Chat Geçmişi</h3>
         <div id="chat-history"></div>
       </div>
 
-      <!-- Sağ Panel: Chat Alanı -->
+      <!-- ◂ SAĞ: Chat alanı ▸ -->
       <div class="chat-wrapper">
         <div class="chat-container">
-          <div class="chat-header">⚽ Futbol Chatbot</div>
+          <div class="chat-header">ChatAsistan: Belge & Soru Cevap</div>
 
-          <!-- Dosya Yükleme Bölümü -->
+          <!-- ◂ Dosya yükleme ▸ -->
           <div
             class="upload-section"
             style="
@@ -32,17 +34,25 @@
             "
           >
             <input type="file" id="document-input" accept=".pdf,.txt,.docx" />
-            <button onclick="uploadDocument()">Belge Yükle</button>
+            <button onclick="uploadDocument()">Belge Yükle</button>
             <button onclick="resetDocument()">Sıfırla</button>
+
+            <!-- Yükleme animasyonu -->
+            <div
+              id="upload-spinner"
+              class="spinner"
+              style="display: none"
+            ></div>
           </div>
-          <!-- /Dosya Yükleme Bölümü -->
+          <!-- /Dosya yükleme -->
 
           <div class="chat-box" id="chat-box"></div>
+
           <div class="input-container">
             <input
-              type="text"
               id="user-input"
-              placeholder="Bir soru sor (örneğin: 'resim üret: ...' veya 'müzik üret: ...')"
+              type="text"
+              placeholder="Bir soru sor (örn: 'resim üret: ...')"
               onkeypress="handleKeyPress(event)"
             />
             <button onclick="sendMessage()">Gönder</button>
@@ -51,32 +61,30 @@
         </div>
       </div>
 
-      <!-- Sağ Üst Bilgilendirici Kartlar -->
-      <div id="info-cards">
-        <div class="info-card">
-          <h3>🎨 &amp; 🎵 Görsel ve Müzik Üretimi</h3>
-          <p>
-            Eğer mesajınız <code>resim üret:</code> veya
-            <code>müzik üret:</code> ile başlarsa, sistemimiz sizin tarifinize
-            uygun görseller ve müzikler oluşturur.
-          </p>
-          <small
-            ><b>Örnek:</b> resim üret: kırmızı bir bisikletli çocuk / müzik
-            üret: enerjik bir rock melodisi</small
-          >
-        </div>
-        <div class="info-card">
-          <h3>⚽ Futbol Kuralları Chatbotu</h3>
-          <p>
-            Bu chatbot, yalnızca futbol kuralları hakkında sorulara cevap verir
-            ve doğru, kısa bilgiler sunar.
-          </p>
-          <small><b>Örnek:</b> Ofsayt nedir?</small>
-        </div>
+    <!-- Bilgilendirici kartlar -->
+    <div id="info-cards">
+      <!-- 1. Kart: artık en üstte, belge durumuna göre cevap kaynağını anlatıyor -->
+      <div class="info-card">
+        <h3>⚽ Futbol & Belge Kaynağı</h3>
+        <p>
+          Henüz bir belge yüklemediyseniz, varsayılan olarak <b>futbol kuralları</b> dokümanından;
+          yüklediğiniz bir PDF/TXT/DOCX belgesi varsa, <b>tamamen o belge</b> üzerinden
+          cevap alırsınız.
+        </p>
+      </div>
+
+      <!-- 2. Kart: eskiden ilk sıradaydı, şimdi altta kalıyor -->
+      <div class="info-card">
+        <h3>🎨 & 🎵 Görsel ve Müzik Üretimi</h3>
+        <p>
+          Eğer mesajınız <code>resim üret:</code> veya <code>müzik üret:</code> ile başlarsa,
+          sistem tarifinize uygun görsel ve müzikler oluşturur.
+        </p>
+        <small><b>Örnek:</b> resim üret: kırmızı bisikletli çocuk / müzik üret: enerjik rock melodisi</small>
       </div>
     </div>
 
-    <!-- Onay Modalı (Silme) -->
+    <!-- 🗑️ Silme Onay Modali -->
     <div id="confirm-modal" class="modal">
       <div class="modal-content">
         <p>Bu sohbeti silmek istediğinize emin misiniz?</p>
@@ -87,7 +95,7 @@
       </div>
     </div>
 
-    <!-- Rename Modalı -->
+    <!-- ✏️ Yeniden Adlandırma Modali -->
     <div id="rename-modal" class="modal">
       <div class="modal-content">
         <p>Yeni oturum adı girin:</p>
@@ -99,6 +107,32 @@
       </div>
     </div>
 
+    <!-- 🔒 Çıkış Yap Modali -->
+    <div id="logout-modal" class="modal-logout">
+      <div class="modal-content">
+        <p>Çıkış yapmak istediğinizden emin misiniz?</p>
+        <div class="modal-buttons">
+          <form method="post" action="/auth/logout">
+            <button type="submit" class="confirm-btn">Çıkış Yap</button>
+          </form>
+          <button type="button" class="cancel-btn" onclick="closeLogoutModal()">
+            İptal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout modal script (küçük) -->
+    <script>
+      function openLogoutModal() {
+        document.getElementById("logout-modal").classList.add("active");
+      }
+      function closeLogoutModal() {
+        document.getElementById("logout-modal").classList.remove("active");
+      }
+    </script>
+
+    <!-- Ana script -->
     <script src="/static/script.js"></script>
   </body>
 </html>

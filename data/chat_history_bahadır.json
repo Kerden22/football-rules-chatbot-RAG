@@ -1,0 +1,18 @@
+{
+  "sessions": [
+    {
+      "id": "5d513801-f4fa-4673-b40e-ee3270338231",
+      "title": "selam",
+      "messages": [
+        {
+          "role": "user",
+          "content": "selam"
+        },
+        {
+          "role": "assistant",
+          "content": "Selam! Futbol kuralları hakkında sorularını alabilirim."
+        }
+      ]
+    }
+  ]
+}

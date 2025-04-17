@@ -15,45 +15,41 @@ window.addEventListener("load", () => {
 });
 
 // Dosya inputunu tetikleyen fonksiyon
-function triggerFileInput() {
-  document.getElementById("document-input").click();
-}
-
-// Dosya yükleme fonksiyonu
 async function uploadDocument() {
   const fileInput = document.getElementById("document-input");
+  const spinner = document.getElementById("upload-spinner");
+
   if (!fileInput.files.length) {
-    // Dosya seçilmediyse hata modali göster
     showErrorModal("Lütfen bir dosya seçin!");
     return;
   }
-  const file = fileInput.files[0];
-  console.log("Seçilen dosya tipi:", file.type);
 
+  const file = fileInput.files[0];
   const allowedTypes = [
     "application/pdf",
     "text/plain",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
   if (!allowedTypes.includes(file.type)) {
-    showErrorModal(
-      "Lütfen yalnızca PDF, TXT veya DOCX formatındaki dosyaları yükleyin."
-    );
+    showErrorModal("Yalnızca PDF, TXT veya DOCX yükleyebilirsiniz.");
     return;
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
+  /* ▶️ SPINNER AÇ */
+  spinner.style.display = "block";
 
   try {
-    let response = await fetch("/upload-document", {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/upload-document", {
       method: "POST",
       body: formData,
     });
-    let data = await response.json();
+    const data = await res.json();
+
     if (data.session_id) {
       currentSessionId = data.session_id;
-      // Başarı mesajını chat'e sistem mesajı olarak ekle
       addMessage(
         "Belge başarıyla yüklendi ve işlendi. Artık soru sorabilirsiniz.",
         "system-message"
@@ -62,9 +58,12 @@ async function uploadDocument() {
     } else {
       showErrorModal("Belge işleme sırasında bir sorun oluştu.");
     }
-  } catch (error) {
-    console.error("Dosya yükleme hatası:", error);
-    showErrorModal("Dosya yükleme sırasında bir hata oluştu.");
+  } catch (err) {
+    console.error(err);
+    showErrorModal("Dosya yüklenirken bir hata oluştu.");
+  } finally {
+    /* ⏹️ SPINNER KAPAT */
+    spinner.style.display = "none";
   }
 }
 

@@ -4,13 +4,12 @@ import json
 import uuid
 import base64
 import requests
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from pydantic import BaseModel
-import uuid
-
+from fastapi.responses import RedirectResponse
 
 # Pydantic modeller (models) burada tanımlandı
 class QueryRequest(BaseModel):
@@ -26,6 +25,44 @@ load_dotenv()
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# ------------------------------
+# Yönlendirme Kodları
+# ------------------------------
+
+@app.get("/")
+def root():
+    """
+    Uygulama ilk açıldığında /login sayfasına yönlendirsin.
+    """
+    return RedirectResponse(url="/login")
+
+@app.get("/login")
+def login_page(request: Request):
+    """
+    login.html şablonunu döndürür.
+    """
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/register")
+def register_page(request: Request):
+    """
+    register.html şablonunu döndürür.
+    """
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@app.get("/index")
+def index_page(request: Request):
+    encoded_user = request.cookies.get("user")
+    if not encoded_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    try:
+        username = base64.b64decode(encoded_user.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    return templates.TemplateResponse("index.html", {"request": request, "username": username})
 
 # ------------------------------
 # ChromaDB ve Google Gemini LLM Ayarları (main.py içinde yer alıyor)
@@ -77,19 +114,38 @@ def get_rag_response(question: str) -> str:
 # ------------------------------
 # Chat History Fonksiyonları
 # ------------------------------
-SESSIONS_FILE = "chat_history.json"
-
-def load_chat_history() -> dict:
-    if not os.path.exists(SESSIONS_FILE):
+def load_chat_history(request: Request) -> dict:
+    encoded = request.cookies.get("user")
+    if not encoded:
         return {"sessions": []}
-    with open(SESSIONS_FILE, "r", encoding="utf-8") as f:
+    
+    try:
+        username = base64.b64decode(encoded.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return {"sessions": []}
+
+    user_file = f"data/chat_history_{username}.json"
+    if not os.path.exists(user_file):
+        return {"sessions": []}
+    with open(user_file, "r", encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError:
             return {"sessions": []}
 
-def save_chat_history(data: dict):
-    with open(SESSIONS_FILE, "w", encoding="utf-8") as f:
+def save_chat_history(request: Request, data: dict):
+    encoded = request.cookies.get("user")
+    if not encoded:
+        return
+
+    try:
+        username = base64.b64decode(encoded.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return
+
+    os.makedirs("data", exist_ok=True)
+    user_file = f"data/chat_history_{username}.json"
+    with open(user_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def find_session(data: dict, session_id: str):
@@ -103,3 +159,9 @@ def find_session(data: dict, session_id: str):
 # ------------------------------
 from app.endpoint import router as endpoints_router
 app.include_router(endpoints_router)
+
+# ------------------------------
+# Auth endpointlerini dahil et (SQLite tabanlı kullanıcı doğrulama)
+# ------------------------------
+from app.auth import router as auth_router
+app.include_router(auth_router, prefix="/auth")

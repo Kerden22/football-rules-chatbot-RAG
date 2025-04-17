@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Giriş Yap - ChatAsistan</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+  </head>
+  <body>
+    <div class="auth-wrapper">
+      <div class="auth-container">
+        <h1 style="margin-bottom: 5px">ChatAsistan</h1>
+        <p
+          style="
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #aaa;
+          "
+        >
+          Belge & Soru Cevap Platformu
+        </p>
+        <h2>Giriş Yap</h2>
+
+        {% if error %}
+        <div class="error-message">Hatalı kullanıcı adı ya da şifre!</div>
+        {% endif %}
+
+        <form id="login-form" action="/auth/login" method="post">
+          <label for="username">Kullanıcı Adı</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Kullanıcı adınızı girin"
+            required
+          />
+
+          <label for="password">Şifre</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="Şifrenizi girin"
+            required
+          />
+
+          <button type="submit">Giriş Yap</button>
+        </form>
+
+        <p style="margin-top: 15px">
+          Hesabınız yok mu? <a href="/auth/register">Kayıt Olun</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

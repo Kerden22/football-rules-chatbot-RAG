@@ -1,0 +1,26 @@
+{
+  "sessions": [
+    {
+      "id": "65add279-3d59-497a-a18e-5788ebad613d",
+      "title": "deneme chat",
+      "messages": [
+        {
+          "role": "user",
+          "content": "selam"
+        },
+        {
+          "role": "assistant",
+          "content": "Selam! Nasıl yardımcı olabilirim?"
+        },
+        {
+          "role": "user",
+          "content": "teşekkürler"
+        },
+        {
+          "role": "assistant",
+          "content": "Rica ederim. Başka sorunuz var mı?"
+        }
+      ]
+    }
+  ]
+}

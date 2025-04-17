@@ -3,6 +3,7 @@ import requests
 import base64
 import uuid  # uuid importunu ekledik
 import docx  # DOCX işlemleri için python-docx gereklidir
+import time
 
 def translate_to_english(text: str) -> str:
     """
@@ -59,25 +60,70 @@ def generate_image(prompt: str) -> str:
 
 def generate_music(prompt: str) -> str:
     """
-    Hugging Face MusicGen API kullanarak müzik üretir.
+    Kullanıcı tarafından Türkçe girilen prompt'u önce İngilizceye çevirir 
+    ve GoAPI DiffRhythm API kullanarak 30 saniyelik müzik üretir.
+    Üretilen audio dosyası indirildikten sonra base64 string olarak döndürülür.
     """
-    HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
-    MUSICGEN_MODEL_ID = "facebook/musicgen-small"
+    # Türkçe prompt'u İngilizceye çeviriyoruz.
+    english_prompt = translate_to_english(prompt)
     
-    if not HUGGINGFACE_API_KEY:
-        raise Exception("HUGGINGFACE_API_KEY is not set in .env")
+    # .env'den GOAPI_API_KEY'yi alıyoruz
+    GOAPI_API_KEY = os.getenv("GOAPI_API_KEY", "")
+    if not GOAPI_API_KEY:
+        raise Exception("GOAPI_API_KEY is not set in .env")
     
-    api_url = f"https://api-inference.huggingface.co/models/{MUSICGEN_MODEL_ID}"
+    TASK_URL = "https://api.goapi.ai/api/v1/task"
+    
     headers = {
-        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
+        "X-API-Key": GOAPI_API_KEY,
         "Content-Type": "application/json"
     }
-    payload = {"inputs": prompt}
-    response = requests.post(api_url, headers=headers, json=payload)
-    if response.status_code != 200:
-        raise Exception(f"Müzik üretim hatası: {response.text}")
-    audio_bytes = response.content
-    b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+    
+    # Müzik üretme parametreleri; 'duration' 30 saniyelik çıktı için iletiliyor.
+    payload = {
+        "model": "Qubico/diffrhythm",
+        "task_type": "txt2audio-base",
+        "input": {
+            "lyrics": "",  # Boş bırakılırsa, API kendi sözleri oluşturur.
+            "style_prompt": english_prompt,
+            "duration": 30
+        }
+    }
+    
+    print("🎶 Şarkı üretme isteği gönderiliyor...")
+    post_response = requests.post(TASK_URL, headers=headers, json=payload)
+    if post_response.status_code != 200:
+        raise Exception(f"API isteği başarısız: {post_response.status_code}, {post_response.text}")
+    
+    task_id = post_response.json()["data"]["task_id"]
+    print(f"✅ Task ID: {task_id}")
+    
+    get_url = f"{TASK_URL}/{task_id}"
+    
+    # Polling: 5 saniyelik aralıklarla, maksimum 120 saniye bekleniyor.
+    max_tries = 24
+    for i in range(max_tries):
+        time.sleep(5)
+        get_response = requests.get(get_url, headers=headers)
+        if get_response.status_code != 200:
+            print(f"❌ Sorgulama hatası: {get_response.status_code} {get_response.text}")
+            continue
+        data = get_response.json()["data"]
+        status = data.get("status", "unknown")
+        print(f"Durum: {status}")
+        if status == "completed":
+            audio_url = data["output"]["audio_url"]
+            print("✅ Müzik üretildi! Audio URL alındı.")
+            break
+    else:
+        raise Exception("Müzik üretimi zaman aşımına uğradı.")
+    
+    # Üretilen audio dosyasını indir
+    audio_response = requests.get(audio_url)
+    if audio_response.status_code != 200:
+        raise Exception("Audio dosyası indirilemedi.")
+    
+    b64_audio = base64.b64encode(audio_response.content).decode("utf-8")
     return b64_audio
 
 def process_uploaded_file(uploaded_file) -> str:
