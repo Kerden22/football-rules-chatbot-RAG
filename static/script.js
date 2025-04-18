@@ -4,14 +4,11 @@ let currentSessionId = null;
 // Sayfa yüklendiğinde mevcut oturumları getir ve Yeni Chat butonunu dinle
 window.addEventListener("load", () => {
   fetchSessions();
-  // Yeni Chat butonuna tıklama olayını ekle
-  document
-    .getElementById("new-chat-btn")
-    .addEventListener("click", function () {
-      currentSessionId = null; // Aktif oturum sıfırlanır
-      document.getElementById("chat-box").innerHTML = ""; // Chat alanı temizlenir
-      document.getElementById("user-input").value = ""; // Giriş alanı temizlenir
-    });
+  document.getElementById("new-chat-btn").addEventListener("click", () => {
+    currentSessionId = null;
+    document.getElementById("chat-box").innerHTML = "";
+    document.getElementById("user-input").value = "";
+  });
 });
 
 // Dosya inputunu tetikleyen fonksiyon
@@ -35,9 +32,7 @@ async function uploadDocument() {
     return;
   }
 
-  /* ▶️ SPINNER AÇ */
   spinner.style.display = "block";
-
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -62,7 +57,6 @@ async function uploadDocument() {
     console.error(err);
     showErrorModal("Dosya yüklenirken bir hata oluştu.");
   } finally {
-    /* ⏹️ SPINNER KAPAT */
     spinner.style.display = "none";
   }
 }
@@ -79,7 +73,6 @@ async function resetDocument() {
     });
     let data = await response.json();
     if (data.status === "document reset") {
-      // Başarı durumunda, sistem mesajını chat'e ekle
       addMessage(
         "Belge sıfırlandı, artık varsayılan futbol dokümanıyla devam ediliyor.",
         "system-message"
@@ -93,75 +86,64 @@ async function resetDocument() {
   }
 }
 
-// Hata modalı gösterme fonksiyonu (Modern hata bildirimi)
+// Hata modalı gösterme fonksiyonu
 function showErrorModal(errorMessage) {
-  // Var olan hata modalı varsa kaldır
-  let existingModal = document.getElementById("error-modal");
-  if (existingModal) {
-    existingModal.remove();
-  }
-  // Modal konteynerini oluştur
+  let existing = document.getElementById("error-modal");
+  if (existing) existing.remove();
+
   let modal = document.createElement("div");
   modal.id = "error-modal";
   modal.className = "modal";
 
-  // Modal içerik kutusunu oluştur
-  let modalContent = document.createElement("div");
-  modalContent.className = "modal-content";
+  let content = document.createElement("div");
+  content.className = "modal-content";
 
-  // Hata mesajı paragrafı
   let p = document.createElement("p");
   p.innerText = errorMessage;
 
-  // Modal buton kapsayıcısı oluştur
   let btnContainer = document.createElement("div");
   btnContainer.className = "modal-buttons";
 
-  // "Tamam" butonunu oluştur
-  let okButton = document.createElement("button");
-  okButton.innerText = "Tamam";
-  okButton.onclick = function () {
-    modal.style.display = "none";
+  let okBtn = document.createElement("button");
+  okBtn.innerText = "Tamam";
+  okBtn.onclick = () => {
     modal.remove();
   };
 
-  btnContainer.appendChild(okButton);
-  modalContent.appendChild(p);
-  modalContent.appendChild(btnContainer);
-  modal.appendChild(modalContent);
+  btnContainer.appendChild(okBtn);
+  content.appendChild(p);
+  content.appendChild(btnContainer);
+  modal.appendChild(content);
   document.body.appendChild(modal);
 
+  // işte bu satırı ekle:
   modal.style.display = "block";
 }
 
-// 🚀 Enter tuşu ile mesaj gönderme
+// Enter tuşu ile gönderme
 function handleKeyPress(event) {
   if (event.key === "Enter") sendMessage();
 }
 
-// Mesaj gönderme fonksiyonu (SESSION entegrasyonlu)
+// Mesaj gönderme fonksiyonu
 async function sendMessage(userInput = null) {
-  let inputField = document.getElementById("user-input");
-  let userMessage = userInput || inputField.value;
-
-  if (!userMessage.trim()) return;
+  const inputField = document.getElementById("user-input");
+  const userMessage = (userInput || inputField.value).trim();
+  if (!userMessage) return;
 
   addMessage(userMessage, "user-message");
 
-  let url = "";
-  if (!currentSessionId) {
-    url = "/sessions";
-  } else {
-    url = `/sessions/${currentSessionId}/messages`;
-  }
+  const url = currentSessionId
+    ? `/sessions/${currentSessionId}/messages`
+    : "/sessions";
 
   try {
-    let response = await fetch(url, {
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question: userMessage }),
     });
-    let data = await response.json();
+    const data = await response.json();
     if (!currentSessionId && data.id) {
       currentSessionId = data.id;
     }
@@ -169,8 +151,8 @@ async function sendMessage(userInput = null) {
     if (currentSessionId) {
       loadSession(currentSessionId);
     }
-  } catch (error) {
-    console.error("Error sending message:", error);
+  } catch (err) {
+    console.error("Error sending message:", err);
   }
 
   inputField.value = "";
@@ -178,126 +160,280 @@ async function sendMessage(userInput = null) {
 
 // Kullanıcı mesajlarını ekrana yazdırma
 function addMessage(text, className) {
-  let chatBox = document.getElementById("chat-box");
-  let messageDiv = document.createElement("div");
-  messageDiv.className = "message " + className;
-  messageDiv.innerText = text;
-  chatBox.appendChild(messageDiv);
+  const chatBox = document.getElementById("chat-box");
+  const div = document.createElement("div");
+  div.className = `message ${className}`;
+  div.innerText = text;
+  chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Bot mesajını seslendirme butonu ekleme
-function addBotMessageWithSpeakBtn(text) {
-  let chatBox = document.getElementById("chat-box");
+// Bot mesajı + dinamik geri bildirim UI
+function addBotMessage(answerText, questionText) {
+  const chatBox = document.getElementById("chat-box");
 
-  let messageDiv = document.createElement("div");
+  // 1) Bot cevabını gösteren balon
+  const messageDiv = document.createElement("div");
   messageDiv.className = "message bot-message";
-  messageDiv.innerText = text;
 
-  let speakBtn = document.createElement("button");
-  speakBtn.className = "speak-btn";
-  speakBtn.innerText = "🔊";
+  const p = document.createElement("p");
+  p.innerText = answerText;
+  messageDiv.appendChild(p);
 
-  let utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "tr-TR";
+  // 2) Yalnızca 👍👎 ikonlarını içeren kapsayıcı
+  const iconsDiv = document.createElement("div");
+  iconsDiv.className = "feedback-icons";
+  iconsDiv.innerHTML = `
+    <button class="like-btn">👍</button>
+    <button class="dislike-btn">👎</button>
+  `;
+  messageDiv.appendChild(iconsDiv);
 
-  let isSpeaking = false;
-  let isPaused = false;
+  // Mesaj balonunu ekle
+  chatBox.appendChild(messageDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
 
-  speakBtn.onclick = () => {
-    if (!isSpeaking) {
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utterance);
-      isSpeaking = true;
-      isPaused = false;
-    } else if (!isPaused) {
-      speechSynthesis.cancel();
-      isPaused = true;
-    } else {
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utterance);
-      isPaused = false;
-    }
+  // 3) Formu balonun ALTINA ekle
+  const formDiv = document.createElement("div");
+  formDiv.className = "feedback-form";
+  formDiv.style.display = "none";
+  formDiv.innerHTML = `
+    <textarea placeholder="Neyi beğenmediniz?"></textarea>
+    <button class="send-feedback-btn">Gönder</button>
+  `;
+  chatBox.appendChild(formDiv);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // 4) Event listener’lar
+  const likeBtn = iconsDiv.querySelector(".like-btn");
+  const dislikeBtn = iconsDiv.querySelector(".dislike-btn");
+  const sendBtn = formDiv.querySelector(".send-feedback-btn");
+
+  likeBtn.addEventListener("click", () => {
+    submitFeedback("like", questionText, answerText, null, formDiv, null);
+  });
+  dislikeBtn.addEventListener("click", () => {
+    formDiv.style.display = "flex";
+  });
+  sendBtn.addEventListener("click", () => {
+    const ta = formDiv.querySelector("textarea");
+    submitFeedback(
+      "dislike",
+      questionText,
+      answerText,
+      ta.value.trim(),
+      formDiv,
+      ta
+    );
+  });
+}
+
+// Geri bildirim POST etme
+function submitFeedback(
+  type,
+  question,
+  answer,
+  feedbackText,
+  formDiv,
+  textareaElem
+) {
+  if (type === "dislike" && !feedbackText) {
+    showToast("Lütfen geri bildiriminizi yazın.", "error");
+    return;
+  }
+
+  const payload = {
+    session_id: currentSessionId,
+    question,
+    answer,
+    feedback_text: feedbackText,
   };
 
-  messageDiv.appendChild(speakBtn);
-  chatBox.appendChild(messageDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  fetch("/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Gönderim hatası");
+      showToast("Geri bildiriminiz için teşekkür ederiz!", "success");
+      if (formDiv && textareaElem) {
+        formDiv.style.display = "none";
+        textareaElem.value = "";
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      showToast("Geri bildirim gönderilirken hata oluştu.", "error");
+    });
 }
 
-// --- OTURUM YÖNETİMİ KISMI ---
+// ------------------- Oturum Yönetimi -------------------
 
 function fetchSessions() {
   fetch("/sessions")
-    .then((response) => response.json())
-    .then((data) => {
-      renderSessionList(data);
-    })
-    .catch((error) => console.error("Error fetching sessions:", error));
+    .then((res) => res.json())
+    .then((data) => renderSessionList(data))
+    .catch((err) => console.error("Error fetching sessions:", err));
 }
 
 function renderSessionList(sessions) {
-  let container = document.getElementById("chat-history");
+  const container = document.getElementById("chat-history");
   container.innerHTML = "";
-  sessions.forEach((session) => {
-    let sessionDiv = document.createElement("div");
-    sessionDiv.className = "session-item";
-
-    let titleSpan = document.createElement("span");
-    titleSpan.textContent = session.title;
-
-    let deleteBtn = document.createElement("button");
-    deleteBtn.innerHTML = '<span style="color:red;">🗑️</span>';
-    deleteBtn.className = "delete-btn";
-    deleteBtn.onclick = (e) => {
+  sessions.forEach((s) => {
+    const div = document.createElement("div");
+    div.className = "session-item";
+    div.innerHTML = `
+      <span>${s.title}</span>
+      <button class="rename-btn">✏️</button>
+      <button class="delete-btn">🗑️</button>
+    `;
+    div.addEventListener("click", () => loadSession(s.id));
+    div.querySelector(".delete-btn").addEventListener("click", (e) => {
       e.stopPropagation();
-      deleteSession(session.id);
-    };
-
-    let renameBtn = document.createElement("button");
-    renameBtn.innerHTML = '<span style="color:yellow;">✏️</span>';
-    renameBtn.className = "rename-btn";
-    renameBtn.onclick = (e) => {
+      deleteSession(s.id);
+    });
+    div.querySelector(".rename-btn").addEventListener("click", (e) => {
       e.stopPropagation();
-      showRenameModal(session.id, session.title);
-    };
-
-    sessionDiv.onclick = () => {
-      loadSession(session.id);
-    };
-
-    sessionDiv.appendChild(titleSpan);
-    sessionDiv.appendChild(renameBtn);
-    sessionDiv.appendChild(deleteBtn);
-    container.appendChild(sessionDiv);
+      showRenameModal(s.id, s.title);
+    });
+    container.appendChild(div);
   });
 }
 
 function loadSession(sessionId) {
   fetch(`/sessions/${sessionId}`)
-    .then((response) => response.json())
+    .then((res) => res.json())
     .then((data) => {
       currentSessionId = data.id;
       renderSessionMessages(data.messages);
     })
-    .catch((error) => console.error("Error loading session:", error));
+    .catch((err) => console.error("Error loading session:", err));
 }
 
 function renderSessionMessages(messages) {
-  let chatBox = document.getElementById("chat-box");
+  const chatBox = document.getElementById("chat-box");
   chatBox.innerHTML = "";
+
+  let lastUserText = "";
   messages.forEach((msg) => {
-    if (msg.role === "assistant_image") {
+    if (msg.role === "user") {
+      addMessage(msg.content, "user-message");
+      lastUserText = msg.content;
+    } else if (msg.role === "assistant") {
+      addBotMessage(msg.content, lastUserText);
+    } else if (msg.role === "assistant_image") {
       addImageToChat(msg.content);
     } else if (msg.role === "assistant_audio") {
       addAudioToChat(msg.content);
     } else {
-      let className = msg.role === "user" ? "user-message" : "bot-message";
-      addMessage(msg.content, className);
+      addMessage(msg.content, "system-message");
     }
   });
 }
 
+// ------------------- Yardımcı Fonksiyonlar -------------------
+
+function addImageToChat(base64Data) {
+  const chatBox = document.getElementById("chat-box");
+  const div = document.createElement("div");
+  div.className = "message bot-message";
+  const img = document.createElement("img");
+  img.src = "data:image/png;base64," + base64Data;
+  img.alt = "AI tarafından oluşturulmuş görsel";
+  div.appendChild(img);
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function addAudioToChat(base64Data) {
+  const chatBox = document.getElementById("chat-box");
+  const div = document.createElement("div");
+  div.className = "message bot-message";
+  const audio = document.createElement("audio");
+  audio.controls = true;
+  audio.src = "data:audio/wav;base64," + base64Data;
+  div.appendChild(audio);
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function deleteSession(sessionId) {
+  showDeleteConfirmation(sessionId);
+}
+
+function showDeleteConfirmation(sessionId) {
+  const modal = document.getElementById("confirm-modal");
+  modal.style.display = "block";
+
+  const yesOld = document.getElementById("confirm-yes");
+  const noOld = document.getElementById("confirm-no");
+
+  const yesBtn = yesOld.cloneNode(true);
+  yesOld.parentNode.replaceChild(yesBtn, yesOld);
+  const noBtn = noOld.cloneNode(true);
+  noOld.parentNode.replaceChild(noBtn, noOld);
+
+  yesBtn.onclick = () => {
+    fetch(`/sessions/${sessionId}`, { method: "DELETE" })
+      .then((res) => {
+        if (res.ok) {
+          fetchSessions();
+          document.getElementById("chat-box").innerHTML = "";
+          currentSessionId = null;
+        } else {
+          alert("Silme işlemi başarısız oldu.");
+        }
+      })
+      .catch((err) => console.error("Error deleting session:", err));
+    modal.style.display = "none";
+  };
+
+  noBtn.onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+function showRenameModal(sessionId, currentTitle) {
+  const modal = document.getElementById("rename-modal");
+  modal.style.display = "block";
+
+  const input = document.getElementById("rename-input");
+  input.value = currentTitle;
+
+  const yesOld = document.getElementById("rename-yes");
+  const noOld = document.getElementById("rename-no");
+
+  const yesBtn = yesOld.cloneNode(true);
+  yesOld.parentNode.replaceChild(yesBtn, yesOld);
+  const noBtn = noOld.cloneNode(true);
+  noOld.parentNode.replaceChild(noBtn, noOld);
+
+  yesBtn.onclick = () => {
+    const newTitle = input.value.trim();
+    if (!newTitle) {
+      modal.style.display = "none";
+      return;
+    }
+    fetch(`/sessions/${sessionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTitle }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.newTitle) fetchSessions();
+      })
+      .catch((err) => console.error("Error renaming:", err));
+    modal.style.display = "none";
+  };
+
+  noBtn.onclick = () => {
+    modal.style.display = "none";
+  };
+}
+
+// Ses tanıma (Voice) fonksiyonelliği
 document.addEventListener("DOMContentLoaded", () => {
   const voiceBtn = document.getElementById("voice-btn");
   const SpeechRecognition =
@@ -318,159 +454,49 @@ document.addEventListener("DOMContentLoaded", () => {
   recognition.onresult = (event) => {
     const transcript =
       event.results[event.results.length - 1][0].transcript.toLowerCase();
-    console.log("🎤 Algılanan kelime:", transcript);
-
     if (transcript.includes("asistan") && !isListeningForQuery) {
-      console.log(
-        "✨ 'Asistan' kelimesi algılandı. Şimdi tam dinleme moduna geçiyoruz..."
-      );
       isListeningForQuery = true;
       recognition.stop();
       setTimeout(listenForQuery, 500);
     }
   };
-
-  recognition.onerror = (event) => {
-    console.error("⚠️ Ses Tanıma Hatası:", event.error);
-  };
-
+  recognition.onerror = (err) => console.error("Ses Tanıma Hatası:", err);
   recognition.start();
 
   function listenForQuery() {
-    const queryRecognition = new SpeechRecognition();
-    queryRecognition.lang = "tr-TR";
-    queryRecognition.continuous = false;
-    queryRecognition.interimResults = false;
+    const qr = new SpeechRecognition();
+    qr.lang = "tr-TR";
+    qr.continuous = false;
+    qr.interimResults = false;
+    qr.start();
 
-    queryRecognition.start();
-    console.log("🎤 Kullanıcının sorusu dinleniyor...");
-
-    queryRecognition.onresult = (event) => {
+    qr.onresult = (event) => {
       const userQuery = event.results[0][0].transcript;
-      console.log("📨 Algılanan soru:", userQuery);
       sendMessage(userQuery);
       isListeningForQuery = false;
       setTimeout(() => recognition.start(), 1000);
     };
-
-    queryRecognition.onerror = (event) => {
-      console.error("⚠️ Soru Tanıma Hatası:", event.error);
+    qr.onerror = (err) => {
+      console.error("Soru Tanıma Hatası:", err);
       isListeningForQuery = false;
       setTimeout(() => recognition.start(), 1000);
     };
   }
 
-  voiceBtn.onclick = () => {
-    listenForQuery();
-  };
+  voiceBtn.onclick = () => listenForQuery();
 });
 
-function deleteSession(sessionId) {
-  showDeleteConfirmation(sessionId);
-}
-
-function showDeleteConfirmation(sessionId) {
-  const modal = document.getElementById("confirm-modal");
-  modal.style.display = "block";
-
-  const yesBtnOld = document.getElementById("confirm-yes");
-  const noBtnOld = document.getElementById("confirm-no");
-
-  let yesBtn = yesBtnOld.cloneNode(true);
-  yesBtnOld.parentNode.replaceChild(yesBtn, yesBtnOld);
-
-  let noBtn = noBtnOld.cloneNode(true);
-  noBtnOld.parentNode.replaceChild(noBtn, noBtnOld);
-
-  yesBtn.onclick = function () {
-    fetch(`/sessions/${sessionId}`, { method: "DELETE" })
-      .then((response) => {
-        if (response.ok) {
-          fetchSessions();
-          document.getElementById("chat-box").innerHTML = "";
-          currentSessionId = null;
-        } else {
-          alert("Silme işlemi başarısız oldu.");
-        }
-      })
-      .catch((error) => console.error("Error deleting session:", error));
-    modal.style.display = "none";
-  };
-
-  noBtn.onclick = function () {
-    modal.style.display = "none";
-  };
-}
-
-function showRenameModal(sessionId, currentTitle) {
-  const renameModal = document.getElementById("rename-modal");
-  renameModal.style.display = "block";
-
-  let renameInput = document.getElementById("rename-input");
-  renameInput.value = currentTitle || "";
-
-  let yesBtnOld = document.getElementById("rename-yes");
-  let noBtnOld = document.getElementById("rename-no");
-
-  let yesBtn = yesBtnOld.cloneNode(true);
-  yesBtnOld.parentNode.replaceChild(yesBtn, yesBtnOld);
-
-  let noBtn = noBtnOld.cloneNode(true);
-  noBtnOld.parentNode.replaceChild(noBtn, noBtnOld);
-
-  yesBtn.onclick = function () {
-    let newTitle = renameInput.value.trim();
-    if (!newTitle) {
-      renameModal.style.display = "none";
-      return;
-    }
-    fetch(`/sessions/${sessionId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          alert("Oturum adı güncellenemedi!");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.newTitle) {
-          fetchSessions();
-        }
-      })
-      .catch((error) => console.error("Error renaming session:", error));
-    renameModal.style.display = "none";
-  };
-
-  noBtn.onclick = function () {
-    renameModal.style.display = "none";
-  };
-}
-
-function addImageToChat(base64Data) {
-  let chatBox = document.getElementById("chat-box");
-  let messageDiv = document.createElement("div");
-  messageDiv.className = "message bot-message";
-
-  let img = document.createElement("img");
-  img.src = "data:image/png;base64," + base64Data;
-  img.alt = "AI tarafından oluşturulmuş görsel";
-  messageDiv.appendChild(img);
-  chatBox.appendChild(messageDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function addAudioToChat(base64Data) {
-  let chatBox = document.getElementById("chat-box");
-  let messageDiv = document.createElement("div");
-  messageDiv.className = "message bot-message";
-
-  let audio = document.createElement("audio");
-  audio.controls = true;
-  audio.src = "data:audio/wav;base64," + base64Data;
-  messageDiv.appendChild(audio);
-  chatBox.appendChild(messageDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
+/**
+ * type: "success" | "error"
+ */
+function showToast(message, type = "success") {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerText = message;
+  container.appendChild(toast);
+  // 3 saniye sonra DOM’dan kaldır
+  setTimeout(() => {
+    container.removeChild(toast);
+  }, 3000);
 }

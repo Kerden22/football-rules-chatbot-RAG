@@ -1,8 +1,8 @@
 import os
 import requests
 import base64
-import uuid  # uuid importunu ekledik
-import docx  # DOCX işlemleri için python-docx gereklidir
+import uuid  
+import docx 
 import time
 
 def translate_to_english(text: str) -> str:

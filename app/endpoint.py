@@ -1,9 +1,14 @@
 from __future__ import annotations
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Depends
 import uuid
-# main.py'den ortak tanımlamaları import ediyoruz
+from sqlalchemy.orm import Session
 from app.main import QueryRequest, RenameRequest, get_rag_response, load_chat_history, save_chat_history, find_session, templates
 from app.utils import generate_image, generate_music, process_uploaded_file, build_rag_chain
+from app.database import get_db
+from app.models import Feedback, User
+import base64
+from datetime import datetime
+import os
 
 router = APIRouter()
 
@@ -32,12 +37,40 @@ def get_session(session_id: str, request: Request):
 
 @router.post("/upload-document")
 async def upload_document(request: Request, file: UploadFile = File(...)):
+    # 1) Kullanıcı adı al
+    encoded_user = request.cookies.get("user")
+    if not encoded_user:
+        raise HTTPException(status_code=401, detail="Kimlik doğrulama hatası")
+    try:
+        username = base64.b64decode(encoded_user).decode("utf-8")
+    except Exception:
+        username = "anonymous"
+
+    # 2) Timestamp oluştur
+    timestamp = datetime.now().strftime("%d.%m.%Y-%H.%M")
+
+    # 3) Uzantıyı ayıkla ve uploads klasörünü hazırla
+    ext = os.path.splitext(file.filename)[1]
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # 4) Dosyayı kaydet
+    save_name = f"{username}-{timestamp}{ext}"
+    save_path = os.path.join(upload_dir, save_name)
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+    # tekrar okuyabilmek için stream’i başa sar
+    file.file.seek(0)
+
+    # 5) Mevcut işlemle metni çıkar
     try:
         extracted_text = process_uploaded_file(file)
     except Exception as e:
         print("Dosya işleme hatası:", e)
         raise HTTPException(status_code=400, detail=str(e))
-    
+
+    # 6) Yeni oturum (session) yarat ve cevap döndür
     session_id = str(uuid.uuid4())
     new_session = {
         "id": session_id,
@@ -50,7 +83,12 @@ async def upload_document(request: Request, file: UploadFile = File(...)):
     data = load_chat_history(request)
     data.setdefault("sessions", []).append(new_session)
     save_chat_history(request, data)
-    return {"session_id": session_id, "message": "Belge başarıyla yüklendi ve işlendi."}
+
+    return {
+        "session_id": session_id,
+        "message": "Belge başarıyla yüklendi ve işlendi.",
+        "saved_path": save_path  # (isteğe bağlı)
+    }
 
 @router.post("/sessions/{session_id}/reset-document")
 def reset_document(session_id: str, request: Request):
@@ -189,3 +227,33 @@ def rename_session(session_id: str, request: Request, request_body: RenameReques
     session["title"] = request_body.title
     save_chat_history(request, data)
     return {"status": "renamed", "id": session_id, "newTitle": request_body.title}
+
+# GERİ BİLDİRİM ENDPOINTİ
+@router.post("/feedback")
+async def save_feedback(request: Request, db: Session = Depends(get_db)):
+    body = await request.json()
+
+    encoded = request.cookies.get("user")
+    if not encoded:
+        raise HTTPException(status_code=401, detail="Kimlik doğrulama hatası")
+
+    try:
+        username = base64.b64decode(encoded.encode("utf-8")).decode("utf-8")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Kullanıcı adı çözümlenemedi")
+
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+
+    feedback = Feedback(
+        user_id=user.id,
+        session_id=body.get("session_id"),
+        question=body.get("question"),
+        answer=body.get("answer"),
+        feedback_text=body.get("feedback_text"),
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+    return {"status": "success", "id": feedback.id}

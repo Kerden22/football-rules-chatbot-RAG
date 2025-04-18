@@ -286,7 +286,7 @@ button:hover {
 .modal {
   display: none;
   position: fixed;
-  z-index: 1000;
+  z-index: 3000;
   left: 0;
   top: 0;
   width: 100%;
@@ -600,4 +600,148 @@ button:hover {
   to {
     transform: translate(-50%, -50%) rotate(360deg);
   }
+}
+
+/* Mesaj balonunun içinde, alt tarafta küçük butonlar */
+.feedback-section {
+  display: flex;
+  justify-content: flex-end; /* sağa yasla */
+  gap: 6px; /* butonlar arası boşluk */
+  margin-top: 4px; /* mesajdan biraz uzak */
+  font-size: 0.85rem; /* tüm içeriği küçült */
+}
+
+/* Butonun kendisini “ikon gibi” göster */
+.feedback-section button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #888; /* hafif gri ikon rengi */
+  font-size: 1.1rem; /* ikon boyutu */
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.feedback-section button:hover {
+  color: #333; /* hover’da koyulaşsın */
+}
+
+/* Yorum formunu da ufalt */
+.feedback-form {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.feedback-form textarea {
+  font-size: 0.85rem;
+  padding: 4px;
+  height: 2em;
+}
+
+.feedback-form .send-feedback-btn {
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  margin-top: 2px;
+}
+
+/* Toast konteyneri */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Ortak toast stili */
+.toast {
+  min-width: 200px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateX(100%);
+  animation: slideIn 0.3s forwards, fadeOut 0.3s forwards 2.7s;
+}
+
+/* Başarılı mesaj */
+.toast.success {
+  background: linear-gradient(135deg, #28a745, #6bcf64);
+}
+
+/* Hata mesajı */
+.toast.error {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+/* Animasyonlar */
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* ── Modern Feedback Form ── */
+
+/* İkonlar (👍👎) */
+.feedback-icons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 1.2rem;
+}
+
+/* Form kabı (mesaj balonundan bağımsız) */
+.feedback-form {
+  background: #1e1e1e;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Textarea’yı karanlık moda uyarlıyoruz */
+.feedback-form textarea {
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 0.85rem;
+  flex: 1;
+  resize: vertical;
+}
+
+/* Gönder butonunu mevcut modern stildirine uyduralım */
+.feedback-form .send-feedback-btn {
+  background: linear-gradient(135deg, #007bff, #00d4ff);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Hover efekti */
+.feedback-form .send-feedback-btn:hover {
+  background: linear-gradient(135deg, #0056b3, #0099cc);
+  transform: translateY(-1px);
 }

@@ -1,4 +1,4 @@
-from __future__ import annotations  # Tip notlarını ertelemek için
+from __future__ import annotations  
 import os
 import json
 import uuid
