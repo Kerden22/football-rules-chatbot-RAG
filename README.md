@@ -1,18 +1,26 @@
 
-# ⚽ Futbol Kuralları Chatbot
+# ChatAsistan: Belge & Soru Cevap
 
-Bu proje, kullanıcıların futbol kurallarıyla ilgili sorularına hızlı, doğru ve interaktif olarak cevap alabilecekleri modern bir chatbot uygulamasıdır. Kullanıcı dostu tasarım ve gelişmiş AI altyapısıyla geliştirilmiş, hem yazılı hem de sesli iletişimi destekler.
+Bu proje, kullanıcıların futbol kurallarıyla ilgili sorularını veya yükledikleri kendi belgelerini baz alarak hızlı, doğru ve interaktif cevaplar alabilecekleri modern bir chatbot uygulamasıdır. Kullanıcı dostu arayüzü, gelişmiş yapay zekâ entegrasyonu ve kapsamlı oturum yönetimi sayesinde benzersiz bir kullanıcı deneyimi sunar.
 
 ----------
 
 ## 🛠️ Kullanılan Teknolojiler
 
--   **FastAPI** – Web servisleri ve API yönetimi için.
--   **Streamlit** – Alternatif chatbot arayüzü ve ses tanıma desteği.
--   **LangChain ve ChromaDB** – PDF verilerinin yüklenmesi ve vektör tabanlı içerik araması için.
--   **Google Gemini AI** – Gelişmiş AI yanıtları üretme ve embedding işlemleri.
+-   **FastAPI** – Backend servisleri ve API yönetimi.
+    
+-   **LangChain & ChromaDB** – Doküman yükleme, içerik sorgulama ve vektör arama işlemleri.
+    
+-   **Google Gemini AI** – Bağlamsal sorgulama, yanıt oluşturma ve embedding işlemleri.
+    
+-   **Stability AI ve GoAPI.ai** – Görsel ve müzik içeriği üretimi.
+    
 -   **HTML/CSS/JavaScript** – Etkileşimli ve mobil uyumlu kullanıcı arayüzü.
--   **SpeechRecognition ve Web Speech API** – Sesli komut algılama ve sesli cevap özellikleri.
+    
+-   **SpeechRecognition & Web Speech API** – Sesli komut ve yanıt desteği.
+    
+-   **SQLite** – Kullanıcı kimlik doğrulama ve geri bildirim yönetimi.
+    
 
 ----------
 
@@ -20,97 +28,125 @@ Bu proje, kullanıcıların futbol kurallarıyla ilgili sorularına hızlı, do�
 
 ```
 Futbol_ChatBot
-├── api.py                # FastAPI tabanlı Backend API
-├── bot.py                # Streamlit chatbot arayüzü
-├── chat_history.json     # Sohbet geçmişi verileri
-├── chroma_db             # Vektör veritabanı (Chroma)
+├── app
+│   ├── main.py      
+│   ├── auth.py                # Kullanıcı giriş ve kayıt yönetimi
+│   ├── endpoint.py            # API endpointleri
+│   ├── utils.py               # Yardımcı fonksiyonlar
+│   ├── database.py            # Veritabanı bağlantı ve modeller
+│   └── models.py              # Veritabanı modelleri
 ├── static
-│   ├── script.js         # Front-end JavaScript fonksiyonları
-│   └── styles.css        # Arayüz tasarım dosyası
+│   ├── script.js              # Frontend JavaScript kodları
+│   └── styles.css             # Arayüz tasarımı
 ├── templates
-│   └── index.html        # Ana arayüz (Jinja2 template)
-├── FutbolKuralları.pdf   # Chatbot'un bilgi kaynağı PDF
-├── requirements.txt      # Python bağımlılıkları
-└── .env                  # API anahtarları ve hassas veriler
-
+│   ├── index.html             # Ana chatbot arayüzü
+│   ├── login.html             # Kullanıcı giriş ekranı
+│   └── register.html          # Kullanıcı kayıt ekranı
+├── uploads                    # Kullanıcı belgelerinin saklandığı dizin
+├── data                       # Kullanıcı sohbet geçmişi JSON dosyaları
+├── chroma_db                  # Vektör veritabanı (ChromaDB)
+├── FutbolKuralları.pdf        # Varsayılan bilgi kaynağı
+├── requirements.txt           # Python bağımlılıkları
+├── init_db.py                 # Database kurulumu
+├── bot.py                     # Streamlit tabanlı chatbot
+└── .env                       # API anahtarları ve gizli veriler
 ```
 
 ----------
 
 ## 🚀 Kurulum ve Kullanım
 
-### 1. Bağımlılıkları Yükleme
+### 1. Bağımlılıkları Yükleyin
 
-```bash
+```
 pip install -r requirements.txt
-
 ```
 
-### 2. FastAPI Uygulamasını Başlatma
-
-```bash
-uvicorn api:app --reload
+### 2. FastAPI Sunucusunu Başlatın
 
 ```
+uvicorn app.main:app --reload
+```
 
-Tarayıcınızda `http://localhost:8000` adresinden chatbot arayüzüne erişebilirsiniz.
+Tarayıcınızda `http://localhost:8000` adresinden uygulamaya ulaşabilirsiniz.
 
+![Image](https://github.com/user-attachments/assets/28bbbcf8-430b-40d8-8f05-9a0e8f535e9d)
 
-![Image](https://github.com/user-attachments/assets/7886a5ef-2ebc-485e-8cde-89f09d0e8933)
+### 3. Kullanıcı İşlemleri
 
+-   **Kayıt olun** veya **giriş yapın**.
+    
+-   Chatbot'a varsayılan futbol dokümanıyla veya kendi yüklediğiniz belgeler ile sorular sorun.
+    
 
-
-### 3. Streamlit Chatbot'u Başlatma
-
-```bash
+----------
+### Streamlit Tabanlı Chatbot'u Başlatma
+```
 streamlit run bot.py
-
 ```
-
-Sesli destekli alternatif chatbot arayüzü açılacaktır.
-
+Sesli destekli alternatif chatbot arayüzü açılacaktır. Pdf yükleme desteği yok.
 
 ![Image](https://github.com/user-attachments/assets/cdf23fdb-5dac-4e8c-8f42-df8286f0803e)
 
-----------
 
 ## 🌟 Temel Özellikler
 
--   **Chat Geçmişi Yönetimi:** Oturumları kaydetme, tekrar yükleme ve silme.
--   **Oturum Düzenleme:** Her sohbet başlığı düzenlenebilir ve silinebilir.
--   **Sesli Komut ve Yanıt:** Kullanıcılar "Asistan" diyerek sesli sorular sorabilir ve yanıtları sesli olarak dinleyebilir.
--   **Gerçek Zamanlı Etkileşim:** Kullanıcı dostu web arayüzü sayesinde hızlı ve anlık cevaplar.
--   **Gelişmiş Yapay Zeka:** Google Gemini AI ile sağlanan doğru ve bağlamsal yanıtlar.
+-   **Doküman İşleme:** Kullanıcı tarafından yüklenen PDF, TXT veya DOCX dosyaları işlenerek içerik üzerinden sorgu yapılır.
+    
+-   **Sesli Komutlar:** "Asistan" diyerek sesli soru sorabilir ve cevapları sesli olarak dinleyebilirsiniz.
+    
+-   **İçerik Üretimi:** "resim üret:" veya "müzik üret:" komutları ile yapay zekâ tarafından özel içerikler oluşturulur.
+    
+-   **Chat ve Oturum Yönetimi:** Sohbetleri düzenleyebilir, yeniden adlandırabilir ve silebilirsiniz.
+    
+-   **Geri Bildirim Sistemi:** Yanıtları değerlendirin ve geri bildirim sağlayarak uygulamanın gelişimine katkıda bulunun.
+    
+-   **Güvenli Dosya Yönetimi:** Kullanıcıların yükledikleri belgeler kullanıcı adı ve zaman etiketiyle organize edilir ve saklanır.
+    
 
 ----------
 
 ## 🎨 Kullanıcı Arayüzü Özellikleri
 
--   **Kolay ve Modern Tasarım:** Kullanıcı dostu, mobil uyumlu ve estetik bir arayüz.
--   **İnteraktif Butonlar:** Düzenleme (✏️) ve silme (🗑️) butonları ile kolay oturum yönetimi.
--   **Dinamik Modallar:** Oturum silme ve ad değiştirme için modern modal pencereler.
+-   **Modern ve Responsive Tasarım:** Mobil ve masaüstü cihazlar için optimize edilmiştir.
+    
+-   **Etkileşimli Modallar:** Hata, uyarı ve onay durumlarında modern modal pencereler.
+    
+-   **Dinamik Toast Bildirimleri:** Başarı ve hata durumlarında anlık bilgilendirme mesajları.
 
+
+![Image](https://github.com/user-attachments/assets/c1f02dd7-2206-4003-b408-414ae970b0a5)
+
+
+
+![Image](https://github.com/user-attachments/assets/767e8868-1fd0-43c2-8015-8ec746b21e41)
+    
 ----------
 
 ## 🗃️ Teknik Detaylar
 
--   **FastAPI** ile RESTful API uç noktaları (`GET`, `POST`, `DELETE`, `PATCH`).
--   **Streamlit** ile hızlı prototipleme ve sesli etkileşim.
--   **RAG (Retrieval-Augmented Generation)** mimarisi kullanılarak PDF içeriğinden otomatik yanıt üretimi.
+-   **FastAPI** tabanlı RESTful API (`GET`, `POST`, `DELETE`, `PATCH`).
+    
+-   **RAG (Retrieval-Augmented Generation)** mimarisi ile dinamik içerik sorgulama.
+    
+-   **Kullanıcı oturumu ve chat geçmişleri** JSON formatında saklanır.
+    
 
 ----------
 
 ## 📌 Kullanım Senaryoları
 
--   **Futbol severler** ve **antrenörler** için hızlı bilgi kaynağı.
--   **Eğitim** ve **öğrenme** amaçlı soru-cevap uygulaması.
--   **Etkileşimli ve eğlenceli** içerik üretimi.
+-   Futbol meraklıları ve profesyoneller için bilgi kaynağı.
+    
+-   Kurumsal belgeler veya eğitim materyallerinden hızlı sorgulama.
+    
+-   Eğitim, öğretim ve eğlence amaçlı interaktif içerik üretimi.
+    
 
 ----------
 
 ## 📞 İletişim ve Destek
 
-Proje ile ilgili herhangi bir sorunuz veya öneriniz için:
+Proje ile ilgili öneri ve sorularınız için:
 
--   **Mahmut Kerem Erden** - [k.erden03@gmail.com](mailto:k.erden03@gmail.com)
-
+-   **Mahmut Kerem Erden** - k.erden03@gmail.com
