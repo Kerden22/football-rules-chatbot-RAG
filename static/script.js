@@ -1,9 +1,12 @@
-// Global değişken: aktif oturum ID'si
+// =====================================
+// 1. Global State ve Sayfa Yükleme
+// =====================================
+
+// Aktif oturumun ID’si
 let currentSessionId = null;
 
-// Sayfa yüklendiğinde mevcut oturumları getir ve Yeni Chat butonunu dinle
 window.addEventListener("load", () => {
-  fetchSessions();
+  fetchSessions(); // Mevcut oturumları getir
   document.getElementById("new-chat-btn").addEventListener("click", () => {
     currentSessionId = null;
     document.getElementById("chat-box").innerHTML = "";
@@ -11,7 +14,13 @@ window.addEventListener("load", () => {
   });
 });
 
-// Dosya inputunu tetikleyen fonksiyon
+// =====================================
+// 2. Doküman Yükleme ve Sıfırlama
+// =====================================
+
+/**
+ * Kullanıcının seçtiği dosyayı sunucuya yükler ve yeni oturum başlatır.
+ */
 async function uploadDocument() {
   const fileInput = document.getElementById("document-input");
   const spinner = document.getElementById("upload-spinner");
@@ -28,11 +37,12 @@ async function uploadDocument() {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
   if (!allowedTypes.includes(file.type)) {
-    showErrorModal("Yalnızca PDF, TXT veya DOCX yükleyebilirsiniz.");
+    showErrorModal("Yalnızca PDF, TXT veya DOCX yükleyebilirsiniz.");
     return;
   }
 
-  spinner.style.display = "block";
+  spinner.style.display = "block"; // Yükleme sırasında spinner göster
+
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -49,7 +59,7 @@ async function uploadDocument() {
         "Belge başarıyla yüklendi ve işlendi. Artık soru sorabilirsiniz.",
         "system-message"
       );
-      fetchSessions();
+      fetchSessions(); // Oturum listesini güncelle
     } else {
       showErrorModal("Belge işleme sırasında bir sorun oluştu.");
     }
@@ -57,11 +67,13 @@ async function uploadDocument() {
     console.error(err);
     showErrorModal("Dosya yüklenirken bir hata oluştu.");
   } finally {
-    spinner.style.display = "none";
+    spinner.style.display = "none"; // Spinner’ı gizle
   }
 }
 
-// Reset doküman fonksiyonu
+/**
+ * Seçili oturumdaki doküman verisini sıfırlar.
+ */
 async function resetDocument() {
   if (!currentSessionId) {
     showErrorModal("Reset işlemi için seçili bir oturum bulunmuyor.");
@@ -86,7 +98,14 @@ async function resetDocument() {
   }
 }
 
-// Hata modalı gösterme fonksiyonu
+// =====================================
+// 3. Hata ve Bilgilendirme Modalları
+// =====================================
+
+/**
+ * Ekrana hata mesajı içeren modal gösterir.
+ * @param {string} errorMessage - Kullanıcıya gösterilecek hata metni
+ */
 function showErrorModal(errorMessage) {
   let existing = document.getElementById("error-modal");
   if (existing) existing.remove();
@@ -116,16 +135,24 @@ function showErrorModal(errorMessage) {
   modal.appendChild(content);
   document.body.appendChild(modal);
 
-  // işte bu satırı ekle:
-  modal.style.display = "block";
+  modal.style.display = "block"; // Modal’ı görünür yap
 }
 
-// Enter tuşu ile gönderme
+// =====================================
+// 4. Mesaj Gönderme ve Klavye Kısayolu
+// =====================================
+
+/**
+ * Enter tuşu ile mesaj gönderimini tetikler.
+ */
 function handleKeyPress(event) {
   if (event.key === "Enter") sendMessage();
 }
 
-// Mesaj gönderme fonksiyonu
+/**
+ * Kullanıcı mesajını sunucuya yollar ve oturumu günceller.
+ * @param {string|null} userInput - Manuel geçirilen mesaj, yoksa input alanından alır
+ */
 async function sendMessage(userInput = null) {
   const inputField = document.getElementById("user-input");
   const userMessage = (userInput || inputField.value).trim();
@@ -145,34 +172,40 @@ async function sendMessage(userInput = null) {
     });
     const data = await response.json();
     if (!currentSessionId && data.id) {
-      currentSessionId = data.id;
+      currentSessionId = data.id; // Yeni oturum ID’si ata
     }
     fetchSessions();
-    if (currentSessionId) {
-      loadSession(currentSessionId);
-    }
+    if (currentSessionId) loadSession(currentSessionId);
   } catch (err) {
     console.error("Error sending message:", err);
   }
 
-  inputField.value = "";
+  inputField.value = ""; // Gönderimden sonra alanı temizle
 }
 
-// Kullanıcı mesajlarını ekrana yazdırma
+// =====================================
+// 5. Mesaj Balonları Ekleme
+// =====================================
+
+/**
+ * Kullanıcı veya sistem mesajını sohbet kutusuna ekler.
+ */
 function addMessage(text, className) {
   const chatBox = document.getElementById("chat-box");
   const div = document.createElement("div");
   div.className = `message ${className}`;
   div.innerText = text;
   chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  chatBox.scrollTop = chatBox.scrollHeight; // Kaydırmayı en alta getir
 }
 
-// Bot mesajı + dinamik geri bildirim UI
+/**
+ * Bot cevabını ve geri bildirim ikonlarını gösterir.
+ * @param {string} answerText - Bot cevabı
+ * @param {string} questionText - Kullanıcı sorusu (feedback için)
+ */
 function addBotMessage(answerText, questionText) {
   const chatBox = document.getElementById("chat-box");
-
-  // 1) Bot cevabını gösteren balon
   const messageDiv = document.createElement("div");
   messageDiv.className = "message bot-message";
 
@@ -180,7 +213,6 @@ function addBotMessage(answerText, questionText) {
   p.innerText = answerText;
   messageDiv.appendChild(p);
 
-  // 2) Yalnızca 👍👎 ikonlarını içeren kapsayıcı
   const iconsDiv = document.createElement("div");
   iconsDiv.className = "feedback-icons";
   iconsDiv.innerHTML = `
@@ -188,12 +220,9 @@ function addBotMessage(answerText, questionText) {
     <button class="dislike-btn">👎</button>
   `;
   messageDiv.appendChild(iconsDiv);
-
-  // Mesaj balonunu ekle
   chatBox.appendChild(messageDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // 3) Formu balonun ALTINA ekle
   const formDiv = document.createElement("div");
   formDiv.className = "feedback-form";
   formDiv.style.display = "none";
@@ -204,7 +233,6 @@ function addBotMessage(answerText, questionText) {
   chatBox.appendChild(formDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // 4) Event listener’lar
   const likeBtn = iconsDiv.querySelector(".like-btn");
   const dislikeBtn = iconsDiv.querySelector(".dislike-btn");
   const sendBtn = formDiv.querySelector(".send-feedback-btn");
@@ -213,7 +241,7 @@ function addBotMessage(answerText, questionText) {
     submitFeedback("like", questionText, answerText, null, formDiv, null);
   });
   dislikeBtn.addEventListener("click", () => {
-    formDiv.style.display = "flex";
+    formDiv.style.display = "flex"; // Dislike tıklanınca textarea göster
   });
   sendBtn.addEventListener("click", () => {
     const ta = formDiv.querySelector("textarea");
@@ -228,7 +256,19 @@ function addBotMessage(answerText, questionText) {
   });
 }
 
-// Geri bildirim POST etme
+// =====================================
+// 6. Geri Bildirim Gönderme
+// =====================================
+
+/**
+ * Kullanıcı geri bildirimini API’ye POST eder.
+ * @param {string} type - "like" veya "dislike"
+ * @param {string} question - Kullanıcı sorusu
+ * @param {string} answer - Bot cevabı
+ * @param {string|null} feedbackText - Opsiyonel detaylı yorum
+ * @param {HTMLElement} formDiv - Geri bildirim formu container
+ * @param {HTMLTextAreaElement|null} textareaElem - Geri bildirim textarea’sı
+ */
 function submitFeedback(
   type,
   question,
@@ -268,8 +308,13 @@ function submitFeedback(
     });
 }
 
-// ------------------- Oturum Yönetimi -------------------
+// =====================================
+// 7. Oturum Yönetimi ve Listeleme
+// =====================================
 
+/**
+ * Oturum listesini API’den alır.
+ */
 function fetchSessions() {
   fetch("/sessions")
     .then((res) => res.json())
@@ -277,6 +322,9 @@ function fetchSessions() {
     .catch((err) => console.error("Error fetching sessions:", err));
 }
 
+/**
+ * Oturumları soldaki listede render eder.
+ */
 function renderSessionList(sessions) {
   const container = document.getElementById("chat-history");
   container.innerHTML = "";
@@ -301,6 +349,9 @@ function renderSessionList(sessions) {
   });
 }
 
+/**
+ * Seçili oturumu yükleyip mesajlarını gösterir.
+ */
 function loadSession(sessionId) {
   fetch(`/sessions/${sessionId}`)
     .then((res) => res.json())
@@ -311,6 +362,9 @@ function loadSession(sessionId) {
     .catch((err) => console.error("Error loading session:", err));
 }
 
+/**
+ * Bir oturumdaki tüm mesajları chat kutusuna render eder.
+ */
 function renderSessionMessages(messages) {
   const chatBox = document.getElementById("chat-box");
   chatBox.innerHTML = "";
@@ -332,31 +386,43 @@ function renderSessionMessages(messages) {
   });
 }
 
-// ------------------- Yardımcı Fonksiyonlar -------------------
+// =====================================
+// 8. Görsel ve Ses Öğeleri
+// =====================================
 
+/**
+ * Base64 görseli chat’e <img> olarak ekler.
+ */
 function addImageToChat(base64Data) {
   const chatBox = document.getElementById("chat-box");
   const div = document.createElement("div");
   div.className = "message bot-message";
   const img = document.createElement("img");
-  img.src = "data:image/png;base64," + base64Data;
+  img.src = "data:image/png;base64," + base64Data; // Inline base64
   img.alt = "AI tarafından oluşturulmuş görsel";
   div.appendChild(img);
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+/**
+ * Base64 ses dosyasını chat’e <audio> olarak ekler.
+ */
 function addAudioToChat(base64Data) {
   const chatBox = document.getElementById("chat-box");
   const div = document.createElement("div");
   div.className = "message bot-message";
   const audio = document.createElement("audio");
   audio.controls = true;
-  audio.src = "data:audio/wav;base64," + base64Data;
+  audio.src = "data:audio/wav;base64," + base64Data; // Inline base64
   div.appendChild(audio);
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+// =====================================
+// 9. Oturum Silme ve Yenileme Modalları
+// =====================================
 
 function deleteSession(sessionId) {
   showDeleteConfirmation(sessionId);
@@ -433,7 +499,10 @@ function showRenameModal(sessionId, currentTitle) {
   };
 }
 
-// Ses tanıma (Voice) fonksiyonelliği
+// =====================================
+// 10. Sesli Asistan Özelliği
+// =====================================
+
 document.addEventListener("DOMContentLoaded", () => {
   const voiceBtn = document.getElementById("voice-btn");
   const SpeechRecognition =
@@ -486,8 +555,14 @@ document.addEventListener("DOMContentLoaded", () => {
   voiceBtn.onclick = () => listenForQuery();
 });
 
+// =====================================
+// 11. Toast Bildirimleri
+// =====================================
+
 /**
- * type: "success" | "error"
+ * Ekranın köşesinde kısa süreli bildirim gösterir.
+ * @param {string} message - Gösterilecek metin
+ * @param {"success"|"error"} type - Bildirim türü
  */
 function showToast(message, type = "success") {
   const container = document.getElementById("toast-container");
@@ -495,8 +570,7 @@ function showToast(message, type = "success") {
   toast.className = `toast ${type}`;
   toast.innerText = message;
   container.appendChild(toast);
-  // 3 saniye sonra DOM’dan kaldır
   setTimeout(() => {
     container.removeChild(toast);
-  }, 3000);
+  }, 3000); // 3 saniye sonra temizle
 }

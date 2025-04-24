@@ -9,3 +9,14 @@ langchain_chroma
 langchainhub
 pypdf
 rapidocr-onnxruntime
+fastapi
+uvicorn[standard]
+SQLAlchemy
+python-multipart
+requests
+python-docx
+PyJWT
+passlib[bcrypt]
+jinja2
+chromadb
+langchain-text-splitters

@@ -12,65 +12,96 @@ import os
 
 router = APIRouter()
 
+# =====================================
+# 1. Ana Sayfa ve Soru Sorma Endpoints
+# =====================================
+
 @router.get("/")
 def home(request: Request):
+    """Ana sayfa için index.html şablonunu döndürür."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.post("/ask")
 def ask_question(request: Request, request_body: QueryRequest):
-    query = request_body.question.strip()
-    answer = get_rag_response(query)
+    """
+    Kullanıcıdan gelen soruyu alır, RAG zinciri üzerinden cevap üretir.
+
+    Args:
+        request: FastAPI isteği
+        request_body: QueryRequest modeli ile soru içeriği
+
+    Returns:
+        dict: 'question' ve 'answer' içeren JSON yanıt
+    """
+    query = request_body.question.strip()                  # Gereksiz boşlukları kaldır
+    answer = get_rag_response(query)                       # RAG cevabını al
     return {"question": query, "answer": answer}
+
+
+# =====================================
+# 2. Oturum Yönetimi (Session) Endpoints
+# =====================================
 
 @router.get("/sessions")
 def list_sessions(request: Request):
+    """Kullanıcının chat geçmişindeki oturumları listeler."""
     data = load_chat_history(request)
     return [{"id": s["id"], "title": s["title"]} for s in data.get("sessions", [])]
 
 @router.get("/sessions/{session_id}")
 def get_session(session_id: str, request: Request):
+    """
+    Belirli bir oturumu getirir.
+
+    Raises:
+        HTTPException: Oturum bulunamazsa 404
+    """
     data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Session not found")  # Oturum yok
     return session
+
+
+# =====================================
+# 3. Doküman Yükleme ve İşleme Endpoint’i
+# =====================================
 
 @router.post("/upload-document")
 async def upload_document(request: Request, file: UploadFile = File(...)):
-    # 1) Kullanıcı adı al
+    """
+    Kullanıcının PDF/doküman yüklemesini alır, kaydeder ve metnini çıkarır.
+
+    Returns:
+        dict: 'session_id', 'message', 'saved_path'
+    """
     encoded_user = request.cookies.get("user")
     if not encoded_user:
-        raise HTTPException(status_code=401, detail="Kimlik doğrulama hatası")
+        raise HTTPException(status_code=401, detail="Kimlik doğrulama hatası")  # Çerez yok
+
     try:
         username = base64.b64decode(encoded_user).decode("utf-8")
     except Exception:
-        username = "anonymous"
+        username = "anonymous"                                       # Çözme hatasında anonim kullanıcı
 
-    # 2) Timestamp oluştur
-    timestamp = datetime.now().strftime("%d.%m.%Y-%H.%M")
-
-    # 3) Uzantıyı ayıkla ve uploads klasörünü hazırla
+    timestamp = datetime.now().strftime("%d.%m.%Y-%H.%M")           # Yükleme zamanı
     ext = os.path.splitext(file.filename)[1]
     upload_dir = "uploads"
     os.makedirs(upload_dir, exist_ok=True)
 
-    # 4) Dosyayı kaydet
     save_name = f"{username}-{timestamp}{ext}"
     save_path = os.path.join(upload_dir, save_name)
-    content = await file.read()
+    content = await file.read()                                     # Dosya içeriğini oku
     with open(save_path, "wb") as f:
-        f.write(content)
-    # tekrar okuyabilmek için stream’i başa sar
-    file.file.seek(0)
+        f.write(content)                                            # Diske kaydet
+    file.file.seek(0)                                               # Akışı başa sar
 
-    # 5) Mevcut işlemle metni çıkar
     try:
-        extracted_text = process_uploaded_file(file)
+        extracted_text = process_uploaded_file(file)                # Metni çıkar
     except Exception as e:
         print("Dosya işleme hatası:", e)
         raise HTTPException(status_code=400, detail=str(e))
 
-    # 6) Yeni oturum (session) yarat ve cevap döndür
     session_id = str(uuid.uuid4())
     new_session = {
         "id": session_id,
@@ -87,21 +118,31 @@ async def upload_document(request: Request, file: UploadFile = File(...)):
     return {
         "session_id": session_id,
         "message": "Belge başarıyla yüklendi ve işlendi.",
-        "saved_path": save_path  # (isteğe bağlı)
+        "saved_path": save_path
     }
 
 @router.post("/sessions/{session_id}/reset-document")
 def reset_document(session_id: str, request: Request):
+    """Oturumdaki doküman metnini sıfırlar."""
     data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    session["document_text"] = ""
+    session["document_text"] = ""                                   # Metni temizle
     save_chat_history(request, data)
     return {"status": "document reset", "session_id": session_id}
 
+
+# =====================================
+# 4. Oturum Oluşturma ve Mesaj Ekleme
+# =====================================
+
 @router.post("/sessions")
 def create_session(request: Request, request_body: QueryRequest):
+    """
+    Yeni bir oturum oluşturur;
+    Resim veya müzik isteğine göre içerik üretir veya RAG cevabı ekler.
+    """
     data = load_chat_history(request)
     session_id = str(uuid.uuid4())
     user_msg = request_body.question.strip()
@@ -118,7 +159,7 @@ def create_session(request: Request, request_body: QueryRequest):
                     {"role": "assistant_image", "content": b64_image}
                 ]
             }
-        except Exception as e:
+        except Exception:
             new_session = {
                 "id": session_id,
                 "title": "Görsel Üretim Hatası",
@@ -139,7 +180,7 @@ def create_session(request: Request, request_body: QueryRequest):
                     {"role": "assistant_audio", "content": b64_audio}
                 ]
             }
-        except Exception as e:
+        except Exception:
             new_session = {
                 "id": session_id,
                 "title": "Müzik Üretim Hatası",
@@ -164,6 +205,9 @@ def create_session(request: Request, request_body: QueryRequest):
 
 @router.post("/sessions/{session_id}/messages")
 def add_message(session_id: str, request: Request, request_body: QueryRequest):
+    """
+    Varolan bir oturuma kullanıcı mesajı ekler ve yanıt üretir.
+    """
     data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
@@ -171,14 +215,14 @@ def add_message(session_id: str, request: Request, request_body: QueryRequest):
 
     user_msg = request_body.question.strip()
 
-    if "document_text" in session and session["document_text"].strip():
+    if session.get("document_text", "").strip():
         try:
             chain = build_rag_chain(session["document_text"])
             response = chain.invoke({"input": user_msg})
             bot_msg = response["answer"]
             session["messages"].append({"role": "user", "content": user_msg})
             session["messages"].append({"role": "assistant", "content": bot_msg})
-        except Exception as e:
+        except Exception:
             session["messages"].append({"role": "user", "content": user_msg})
             session["messages"].append({"role": "assistant", "content": "Dinamik sorgu oluşturulurken hata meydana geldi."})
     else:
@@ -188,7 +232,7 @@ def add_message(session_id: str, request: Request, request_body: QueryRequest):
                 b64_image = generate_image(prompt_text)
                 session["messages"].append({"role": "user", "content": user_msg})
                 session["messages"].append({"role": "assistant_image", "content": b64_image})
-            except Exception as e:
+            except Exception:
                 session["messages"].append({"role": "user", "content": user_msg})
                 session["messages"].append({"role": "assistant", "content": "Görsel üretimi sırasında hata oluştu, lütfen daha sonra deneyin."})
         elif user_msg.lower().startswith("müzik üret:"):
@@ -197,7 +241,7 @@ def add_message(session_id: str, request: Request, request_body: QueryRequest):
                 b64_audio = generate_music(prompt_text)
                 session["messages"].append({"role": "user", "content": user_msg})
                 session["messages"].append({"role": "assistant_audio", "content": b64_audio})
-            except Exception as e:
+            except Exception:
                 session["messages"].append({"role": "user", "content": user_msg})
                 session["messages"].append({"role": "assistant", "content": "Müzik üretimi sırasında hata oluştu, lütfen daha sonra deneyin."})
         else:
@@ -208,8 +252,14 @@ def add_message(session_id: str, request: Request, request_body: QueryRequest):
     save_chat_history(request, data)
     return {"question": user_msg, "answer": "OK"}
 
+
+# =====================================
+# 5. Oturum Silme ve Yeniden Adlandırma
+# =====================================
+
 @router.delete("/sessions/{session_id}")
 def delete_session(session_id: str, request: Request):
+    """Belirtilen oturumu siler."""
     data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
@@ -220,19 +270,26 @@ def delete_session(session_id: str, request: Request):
 
 @router.patch("/sessions/{session_id}")
 def rename_session(session_id: str, request: Request, request_body: RenameRequest):
+    """Oturum başlığını günceller."""
     data = load_chat_history(request)
     session = find_session(data, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    session["title"] = request_body.title
+    session["title"] = request_body.title                          # Yeni başlığı ata
     save_chat_history(request, data)
     return {"status": "renamed", "id": session_id, "newTitle": request_body.title}
 
-# GERİ BİLDİRİM ENDPOINTİ
+
+# =====================================
+# 6. Geri Bildirim Endpoint’i
+# =====================================
+
 @router.post("/feedback")
 async def save_feedback(request: Request, db: Session = Depends(get_db)):
+    """
+    Kullanıcının oturum ile ilgili geri bildirimini veritabanına kaydeder.
+    """
     body = await request.json()
-
     encoded = request.cookies.get("user")
     if not encoded:
         raise HTTPException(status_code=401, detail="Kimlik doğrulama hatası")

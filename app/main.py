@@ -1,91 +1,109 @@
-from __future__ import annotations  
-import os
-import json
-import uuid
-import base64
-import requests
+from __future__ import annotations  # Gelecekteki tip açıklamalarını etkinleştirir
+import os  # Dosya/dizin işlemleri
+import json  # JSON okuma/yazma
+import uuid  # Benzersiz kimlik üretimi
+import base64  # Base64 kodlama/çözme
+import requests  # HTTP istekleri için
+from dotenv import load_dotenv  # .env dosyasını yükleme
 from fastapi import FastAPI, HTTPException, Request, Form
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from dotenv import load_dotenv
-from pydantic import BaseModel
-from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles  # Statik dosya servisi
+from fastapi.templating import Jinja2Templates  # Şablon motoru
+from fastapi.responses import RedirectResponse  # Yönlendirme
 
-# Pydantic modeller (models) burada tanımlandı
+load_dotenv()  # .env içindekileri yükle
+
+# =====================================
+# 2. FastAPI Uygulaması ve Statik İçerik
+# =====================================
+app = FastAPI()  # Uygulamayı başlat
+app.mount("/static", StaticFiles(directory="static"), name="static")  # /static dizini
+templates = Jinja2Templates(directory="templates")  # Şablonlar
+
+# =====================================
+# 3. Pydantic Modelleri
+# =====================================
+from pydantic import BaseModel
+
 class QueryRequest(BaseModel):
-    question: str
+    """
+    question: Kullanıcının futbol kuralları hakkında sorduğu soru.
+    """
+    question: str  # Soru metni (zorunlu)
 
 class RenameRequest(BaseModel):
-    title: str
+    """
+    title: Kaydedilen oturum veya belge başlığının yeni adı.
+    """
+    title: str  # Yeni başlık metni
 
-# Çevre değişkenlerini yükle
-load_dotenv()
-
-# FastAPI uygulamasını başlat
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-# ------------------------------
-# Yönlendirme Kodları
-# ------------------------------
+# =====================================
+# 4. Basit Yönlendirme Endpoint’leri
+# =====================================
 
 @app.get("/")
 def root():
-    """
-    Uygulama ilk açıldığında /login sayfasına yönlendirsin.
-    """
-    return RedirectResponse(url="/login")
+    """Ana sayfayı /login’e yönlendirir."""
+    return RedirectResponse(url="/login")  # İlk açılışta login
 
 @app.get("/login")
 def login_page(request: Request):
-    """
-    login.html şablonunu döndürür.
-    """
+    """Giriş formu sayfasını render eder."""
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/register")
 def register_page(request: Request):
-    """
-    register.html şablonunu döndürür.
-    """
+    """Kayıt formu sayfasını render eder."""
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.get("/index")
 def index_page(request: Request):
-    encoded_user = request.cookies.get("user")
+    """
+    index.html’i döndürür.
+    Eğer 'user' çerezi yoksa veya çözme hatası alırsak /auth/login’e yönlendirir.
+    """
+    encoded_user = request.cookies.get("user")  # Çerez kontrolü
     if not encoded_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
     try:
-        username = base64.b64decode(encoded_user.encode("utf-8")).decode("utf-8")
+        username = base64.b64decode(encoded_user).decode("utf-8")
     except Exception:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    return templates.TemplateResponse("index.html", {"request": request, "username": username})
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request, "username": username}
+    )
 
-# ------------------------------
-# ChromaDB ve Google Gemini LLM Ayarları (main.py içinde yer alıyor)
-# ------------------------------
+# =====================================
+# 5. PDF Yükleme ve RAG (Chroma + Gemini) Ayarları
+# =====================================
+print("📖 PDF yükleniyor ve işleniyor...")  
+
 from langchain_community.document_loaders import PyPDFLoader  
 from langchain_text_splitters import RecursiveCharacterTextSplitter  
-from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
-from langchain.chains import create_retrieval_chain
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_chroma import Chroma  
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI  
+from langchain.chains import create_retrieval_chain  
+from langchain_core.prompts import ChatPromptTemplate  
+from langchain.chains.combine_documents import create_stuff_documents_chain  
 
-print("📖 PDF yükleniyor ve işleniyor...")
-loader = PyPDFLoader("FutbolKuralları.pdf")  
+# PDF’den metin yükle ve böl
+loader = PyPDFLoader("FutbolKuralları.pdf")
 data = loader.load()  
-all_text = "\n".join([page.page_content for page in data])  
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)  
+all_text = "\n".join(p.page_content for p in data)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
 docs = text_splitter.split_text(all_text)
 
+# Embedding ve vektör veritabanı
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 vectorstore = Chroma.from_texts(docs, embeddings, persist_directory="./chroma_db")
-retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+retriever = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 10}  
+)
 
+# LLM konfigürasyonu
 llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-pro",
     temperature=0.3,
@@ -99,34 +117,42 @@ system_prompt = (
     "Cevaplarını en fazla üç cümle ile ver ve doğru bilgi içerdiğinden emin ol.\n\n"
     "{context}"
 )
-
 prompt = ChatPromptTemplate.from_messages([
     ("system", system_prompt),
     ("human", "{input}")
 ])
+
 question_answer_chain = create_stuff_documents_chain(llm, prompt)
 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
 def get_rag_response(question: str) -> str:
-    response = rag_chain.invoke({"input": question})
-    return response["answer"]
+    """
+    RAG zincirini çalıştırır ve kullanıcı sorusuna bağlama dayalı cevap döner.
+    """
+    result = rag_chain.invoke({"input": question})
+    return result["answer"]
 
-# ------------------------------
-# Chat History Fonksiyonları
-# ------------------------------
+# =====================================
+# 6. Sohbet Geçmişi Yönetimi
+# =====================================
+
 def load_chat_history(request: Request) -> dict:
+    """
+    Kullanıcıya ait chat geçmişini JSON dosyasından yükler.
+    """
     encoded = request.cookies.get("user")
     if not encoded:
         return {"sessions": []}
-    
+
     try:
-        username = base64.b64decode(encoded.encode("utf-8")).decode("utf-8")
+        username = base64.b64decode(encoded).decode("utf-8")
     except Exception:
         return {"sessions": []}
 
     user_file = f"data/chat_history_{username}.json"
     if not os.path.exists(user_file):
         return {"sessions": []}
+
     with open(user_file, "r", encoding="utf-8") as f:
         try:
             return json.load(f)
@@ -134,34 +160,36 @@ def load_chat_history(request: Request) -> dict:
             return {"sessions": []}
 
 def save_chat_history(request: Request, data: dict):
+    """
+    Chat geçmişini JSON formatında diske yazar.
+    """
     encoded = request.cookies.get("user")
     if not encoded:
         return
 
     try:
-        username = base64.b64decode(encoded.encode("utf-8")).decode("utf-8")
+        username = base64.b64decode(encoded).decode("utf-8")
     except Exception:
         return
 
     os.makedirs("data", exist_ok=True)
-    user_file = f"data/chat_history_{username}.json"
-    with open(user_file, "w", encoding="utf-8") as f:
+    with open(f"data/chat_history_{username}.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 def find_session(data: dict, session_id: str):
+    """
+    session_id’ye göre oturum bilgisini döner.
+    """
     for session in data.get("sessions", []):
         if session["id"] == session_id:
             return session
     return None
 
-# ------------------------------
-# app/endpoint.py dosyasındaki tüm Endpoint'leri uygulamaya dahil et
-# ------------------------------
-from app.endpoint import router as endpoints_router
+# =====================================
+# 7. Uygulama Router’larının Dahil Edilmesi
+# =====================================
+from app.endpoint import router as endpoints_router  # Tüm endpoint tanımları
 app.include_router(endpoints_router)
 
-# ------------------------------
-# Auth endpointlerini dahil et (SQLite tabanlı kullanıcı doğrulama)
-# ------------------------------
-from app.auth import router as auth_router
+from app.auth import router as auth_router  # Kimlik doğrulama endpoint’leri
 app.include_router(auth_router, prefix="/auth")

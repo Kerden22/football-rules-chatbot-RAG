@@ -5,9 +5,13 @@ import uuid
 import docx 
 import time
 
+# =====================================
+# 1. Çeviri Fonksiyonu
+# =====================================
+
 def translate_to_english(text: str) -> str:
     """
-    Basit bir çeviri örneği
+    Gelen Türkçe metni MyMemory API ile İngilizceye çevirir.
     """
     try:
         response = requests.get(
@@ -17,26 +21,29 @@ def translate_to_english(text: str) -> str:
         if response.status_code == 200:
             data = response.json()
             return data.get("responseData", {}).get("translatedText", text)
-        return text
+        return text  # Başarısızsa orijinal metni döndür
     except Exception as e:
-        print("Translation error:", e)
+        print("Translation error:", e)  # Hata bilgisini logla
         return text
+
+
+# =====================================
+# 2. Görsel Üretim Fonksiyonu
+# =====================================
 
 def generate_image(prompt: str) -> str:
     """
-    Stability AI API kullanarak, öncelikle prompt'u İngilizceye çevirip, 
-    Stable Diffusion üzerinden görsel üretir.
+    Prompt'u önce İngilizceye çevirir, sonra Stability AI API ile görsel üretir.
     """
     STABILITY_API_KEY = os.getenv("STABILITY_API_KEY", "")
     if not STABILITY_API_KEY:
         raise Exception("STABILITY_API_KEY is not set in .env")
-    
-    # Prompt'u çeviriyoruz
-    english_prompt = translate_to_english(prompt)
-    
+
+    english_prompt = translate_to_english(prompt)  # Prompt'u İngilizceye çevir
+
     try:
         response = requests.post(
-            url="https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-image",
+            "https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-image",
             headers={
                 "Authorization": f"Bearer {STABILITY_API_KEY}",
                 "Accept": "application/json",
@@ -58,55 +65,49 @@ def generate_image(prompt: str) -> str:
     except Exception as e:
         raise Exception(f"Resim üretim hatası: {e}")
 
+
+# =====================================
+# 3. Müzik Üretim Fonksiyonu
+# =====================================
+
 def generate_music(prompt: str) -> str:
     """
-    Kullanıcı tarafından Türkçe girilen prompt'u önce İngilizceye çevirir 
-    ve GoAPI DiffRhythm API kullanarak 30 saniyelik müzik üretir.
-    Üretilen audio dosyası indirildikten sonra base64 string olarak döndürülür.
+    Türkçe prompt'u İngilizceye çevirir ve GoAPI DiffRhythm ile müzik üretir.
+    Üretilen ses dosyasını indirip base64 string olarak döner.
     """
-    # Türkçe prompt'u İngilizceye çeviriyoruz.
     english_prompt = translate_to_english(prompt)
-    
-    # .env'den GOAPI_API_KEY'yi alıyoruz
+
     GOAPI_API_KEY = os.getenv("GOAPI_API_KEY", "")
     if not GOAPI_API_KEY:
         raise Exception("GOAPI_API_KEY is not set in .env")
-    
+
     TASK_URL = "https://api.goapi.ai/api/v1/task"
-    
-    headers = {
-        "X-API-Key": GOAPI_API_KEY,
-        "Content-Type": "application/json"
-    }
-    
-    # Müzik üretme parametreleri; 'duration' 30 saniyelik çıktı için iletiliyor.
+    headers = {"X-API-Key": GOAPI_API_KEY, "Content-Type": "application/json"}
     payload = {
         "model": "Qubico/diffrhythm",
         "task_type": "txt2audio-base",
         "input": {
-            "lyrics": "",  # Boş bırakılırsa, API kendi sözleri oluşturur.
+            "lyrics": "",                
             "style_prompt": english_prompt,
-            "duration": 30
+            "duration": 30               
         }
     }
-    
+
     print("🎶 Şarkı üretme isteği gönderiliyor...")
     post_response = requests.post(TASK_URL, headers=headers, json=payload)
     if post_response.status_code != 200:
         raise Exception(f"API isteği başarısız: {post_response.status_code}, {post_response.text}")
-    
+
     task_id = post_response.json()["data"]["task_id"]
     print(f"✅ Task ID: {task_id}")
-    
+
     get_url = f"{TASK_URL}/{task_id}"
-    
-    # Polling: 5 saniyelik aralıklarla, maksimum 120 saniye bekleniyor.
-    max_tries = 24
-    for i in range(max_tries):
-        time.sleep(5)
+    max_tries = 24                      # 24 * 5s = 120s maksimum bekleme
+    for _ in range(max_tries):
+        time.sleep(5)                   # 5 saniye ara ver
         get_response = requests.get(get_url, headers=headers)
         if get_response.status_code != 200:
-            print(f"❌ Sorgulama hatası: {get_response.status_code} {get_response.text}")
+            print(f"❌ Sorgulama hatası: {get_response.status_code}")
             continue
         data = get_response.json()["data"]
         status = data.get("status", "unknown")
@@ -117,18 +118,22 @@ def generate_music(prompt: str) -> str:
             break
     else:
         raise Exception("Müzik üretimi zaman aşımına uğradı.")
-    
-    # Üretilen audio dosyasını indir
+
     audio_response = requests.get(audio_url)
     if audio_response.status_code != 200:
         raise Exception("Audio dosyası indirilemedi.")
-    
+
     b64_audio = base64.b64encode(audio_response.content).decode("utf-8")
     return b64_audio
 
+
+# =====================================
+# 4. Yüklenen Dosyayı İşleme Fonksiyonu
+# =====================================
+
 def process_uploaded_file(uploaded_file) -> str:
     """
-    Yüklenen dosyanın türüne göre (PDF, TXT, DOCX) metni çıkartır.
+    Yüklenen PDF, TXT veya DOCX dosyasından metni çıkarır.
     """
     filename = uploaded_file.filename.lower()
     if filename.endswith(".pdf"):
@@ -136,19 +141,19 @@ def process_uploaded_file(uploaded_file) -> str:
         with open(temp_path, "wb") as f:
             content = uploaded_file.file.read()
             f.write(content)
-        from langchain_community.document_loaders import PyPDFLoader  
+        from langchain_community.document_loaders import PyPDFLoader
         loader = PyPDFLoader(temp_path)
         data = loader.load()
         os.remove(temp_path)
-        text = "\n".join([page.page_content for page in data])
-        return text
+        return "\n".join(page.page_content for page in data)
+
     elif filename.endswith(".txt"):
         content = uploaded_file.file.read()
         try:
-            text = content.decode("utf-8")
+            return content.decode("utf-8")
         except Exception:
-            text = content.decode("iso-8859-9")
-        return text
+            return content.decode("iso-8859-9")  # Fallback kodlama
+
     elif filename.endswith(".docx"):
         temp_path = f"temp_{uuid.uuid4().hex}.docx"
         with open(temp_path, "wb") as f:
@@ -156,16 +161,19 @@ def process_uploaded_file(uploaded_file) -> str:
             f.write(content)
         doc = docx.Document(temp_path)
         os.remove(temp_path)
-        full_text = []
-        for para in doc.paragraphs:
-            full_text.append(para.text)
-        return "\n".join(full_text)
+        return "\n".join(para.text for para in doc.paragraphs)
+
     else:
         raise Exception("Desteklenmeyen dosya türü. Lütfen PDF, TXT veya DOCX yükleyin.")
 
+
+# =====================================
+# 5. Dinamik RAG Zinciri Oluşturma
+# =====================================
+
 def build_rag_chain(document_text: str):
     """
-    Verilen doküman metnine göre dinamik bir Retrieval Chain (RAG zinciri) oluşturur.
+    Verilen metni kullanarak dinamik bir Retrieval-Augmented Generation zinciri oluşturur.
     """
     from langchain_text_splitters import RecursiveCharacterTextSplitter  
     from langchain_chroma import Chroma
@@ -174,23 +182,23 @@ def build_rag_chain(document_text: str):
     from langchain_core.prompts import ChatPromptTemplate
     from langchain.chains.combine_documents import create_stuff_documents_chain
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)  
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     docs = text_splitter.split_text(document_text)
 
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    vectorstore = Chroma.from_texts(docs, embeddings)  # persist_directory yok: dinamik olarak oluşturuluyor
+    vectorstore = Chroma.from_texts(docs, embeddings)  # persist_directory verilmedi: geçici yapı
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
     system_prompt = (
-         "Sen bir yardımcı asistansın ve yalnızca yüklenen doküman içeriğine dayalı sorulara cevap veriyorsun. "
-         "Yanıtlarını yalnızca verilen bağlam içeriğinden oluştur. "
-         "Eğer sorunun cevabını bilmiyorsan, 'Bu konuda yardımcı olamıyorum.' de. "
-         "Cevaplarını en fazla üç cümle ile ver ve doğru bilgi içerdiğinden emin ol.\n\n"
-         "{context}"
+        "Sen bir yardımcı asistansın ve yalnızca yüklenen doküman içeriğine dayalı sorulara cevap veriyorsun. "
+        "Yanıtlarını yalnızca verilen bağlam içeriğinden oluştur. "
+        "Eğer sorunun cevabını bilmiyorsan, 'Bu konuda yardımcı olamıyorum.' de. "
+        "Cevaplarını en fazla üç cümle ile ver ve doğru bilgi içerdiğinden emin ol.\n\n"
+        "{context}"
     )
     prompt = ChatPromptTemplate.from_messages([
-         ("system", system_prompt),
-         ("human", "{input}")
+        ("system", system_prompt),
+        ("human", "{input}")
     ])
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro", temperature=0.3, max_tokens=500)
     question_answer_chain = create_stuff_documents_chain(llm, prompt)
